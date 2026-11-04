@@ -160,7 +160,7 @@ function renderHero() {
   const target = {
     ry: lerp(-0.7, 0.62, turn) + heroState.pointerX * 0.07,
     rx: lerp(0.42, 0.16, enter) + heroState.pointerY * 0.04,
-    y: lerp(-heroViewH * 0.27, -heroViewH * 0.03, enter),
+    y: lerp(-heroViewH * 0.24, -heroViewH * 0.03, enter),
     s: lerp(0.66, 1.0, enter),
   };
   const k = reduceMotion ? 1 : 0.08;
@@ -218,7 +218,7 @@ function resizeConfig() {
   if (!w || !h) return;
   cRenderer.setSize(w, h, false);
   cCamera.aspect = w / h;
-  cCamera.position.set(0, 1.6, 21.5);
+  cCamera.position.set(0, 1.5, 19);
   cCamera.lookAt(0, -0.2, 0);
   cCamera.updateProjectionMatrix();
 }
@@ -309,7 +309,7 @@ async function renderThumbnails() {
   const scene = createStage(r);
   await scene.userData.envPromise;
   const cam = new THREE.PerspectiveCamera(24, W / H, 0.1, 100);
-  cam.position.set(0, 2.2, 17);
+  cam.position.set(0, 2.0, 15);
   cam.lookAt(0, -0.25, 0);
   const model = createGlasses('havana', r);
   model.rotation.set(0.2, -0.62, 0);

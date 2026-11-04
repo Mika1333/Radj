@@ -130,7 +130,7 @@ function acetateTexture(finish, renderer) {
   if (textureCache.has(key)) return textureCache.get(key);
   const tex = new THREE.CanvasTexture(makeAcetateCanvas(finish));
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(0.24, 0.24);
+  tex.repeat.set(0.3, 0.3);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = renderer ? renderer.capabilities.getMaxAnisotropy() : 4;
   textureCache.set(key, tex);
@@ -138,61 +138,72 @@ function acetateTexture(finish, renderer) {
 }
 
 /* ---------- Geometrie ---------- */
+// Einheit ≈ 23,5 mm: Glasbreite 47 mm = 2 Einheiten, Steg 21 mm ≈ 0,89
+const R_A = 1.0;           // halbe Glasbreite
+const R_B = 0.8;          // halbe Glashöhe (flache, eckige Form)
+const SQ = 0.46;           // Superellipsen-Exponent: kleiner = eckiger
+const RIM = 0.058;         // Randstärke der Kontur (plus Fase links und rechts)
+const BEVEL_S = 0.026;     // Fasenbreite
+const BEVEL_T = 0.03;      // Fasentiefe
+const CX = R_A - RIM + 0.445; // Glasmitte → 21 mm Steg zwischen den Gläsern
+const DEPTH = 0.11;        // Acetatstärke der Front (≈ 4 mm inkl. Fase)
+const BEND = 0.04;         // Frontbiegung (Wrap)
 
-const R_A = 1.0;          // halbe Glasbreite (≈ 24 mm)
-const R_B = 0.93;         // halbe Glashöhe
-const RIM = 0.145;         // Randstärke
-const CX = 1.17;          // Glasmittelpunkt-Abstand zur Mitte
-const DEPTH = 0.2;        // Acetatstärke der Front
-const BEND = 0.05;        // Frontbiegung (Wrap)
-
-// Panto-Kontur: rund mit leicht abgeflachter Oberkante
-function rimPoint(theta, a, b) {
-  const s = Math.sin(theta);
+// Eckige Kontur: Superellipse, unten leicht trapezförmig eingezogen,
+// Oberkante steigt zur Außenseite minimal an (Augenbrauenlinie)
+function rimPoint(theta, a, b, outerSign = -1) {
   const c = Math.cos(theta);
-  const y = s > 0 ? b * Math.pow(s, 0.8) : b * s;
-  return [a * c, y];
+  const s = Math.sin(theta);
+  let x = a * Math.sign(c) * Math.pow(Math.abs(c), SQ);
+  let y = b * Math.sign(s) * Math.pow(Math.abs(s), SQ);
+  if (y < 0) x *= 1 - 0.09 * (-y / b);
+  const outer = Math.max(0, (x * outerSign) / a); // 0 innen … 1 außen
+  if (y > 0) y += 0.035 * outer * (y / b);
+  return [x, y];
 }
 
-// Ausformung für die Backen (Endstücke) an der Außenseite oben
+// Ausformung der Backen (Endstücke) an der oberen Außenecke
 function wingBump(thetaLocal) {
-  // thetaLocal: Winkel relativ zur Außenseite (Grad), Zentrum bei 157°
-  const d = (thetaLocal - 157) / 22;
-  return Math.abs(d) < 1 ? 0.13 * 0.5 * (1 + Math.cos(Math.PI * d)) : 0;
+  const d = (thetaLocal - 152) / 26;
+  return Math.abs(d) < 1 ? 0.075 * 0.5 * (1 + Math.cos(Math.PI * d)) : 0;
 }
+
+const T_TOP = 33; // Ansatz der Stegoberkante an der Innenseite (Grad)
 
 function buildFrontShape() {
   const shape = new THREE.Shape();
   const deg = Math.PI / 180;
-  const pts = [];
-  // Linkes Glas: von oben-innen (50°) gegen den Uhrzeigersinn bis unten-innen (325°)
-  for (let t = 50; t <= 325; t += 2) {
+  const left = [];
+  // Linkes Glas: Innenseite oben (33°) gegen den Uhrzeigersinn bis Innenseite Mitte (360°)
+  for (let t = T_TOP; t <= 360; t += 1) {
     const bump = wingBump(t);
-    const [x, y] = rimPoint(t * deg, R_A + bump, R_B + bump * 0.6);
-    pts.push([-CX + x, y]);
+    const [x, y] = rimPoint(t * deg, R_A + bump, R_B + bump * 0.35, -1);
+    left.push([-CX + x, y]);
   }
-  const L = pts[pts.length - 1];
-  shape.moveTo(pts[0][0], pts[0][1]);
-  for (let i = 1; i < pts.length; i++) shape.lineTo(pts[i][0], pts[i][1]);
-  // Schlüsselloch-Steg: Bogen nach oben bis Scheitel
-  const apexY = 0.36;
-  shape.bezierCurveTo(L[0] + 0.12, L[1] + 0.32, -0.2, apexY, 0, apexY);
-  shape.bezierCurveTo(0.2, apexY, -L[0] - 0.12, L[1] + 0.32, -L[0], L[1]);
-  // Rechtes Glas: von unten-innen (215°) über außen bis oben-innen (130°+360°)
-  for (let t = 215; t <= 490; t += 2) {
-    const mirrored = 180 - (t % 360); // Winkel im Spiegel des linken Glases
-    const bump = wingBump(((mirrored % 360) + 360) % 360);
-    const [x, y] = rimPoint(t * deg, R_A + bump, R_B + bump * 0.6);
+  shape.moveTo(left[0][0], left[0][1]);
+  for (let i = 1; i < left.length; i++) shape.lineTo(left[i][0], left[i][1]);
+  const L = left[left.length - 1];
+
+  // Schlüsselloch-Steg: schlanker Bogen nach oben
+  const apexY = 0.4;
+  shape.bezierCurveTo(L[0] + 0.03, L[1] + 0.25, -0.17, apexY, 0, apexY);
+  shape.bezierCurveTo(0.17, apexY, -L[0] - 0.03, L[1] + 0.25, -L[0], L[1]);
+
+  // Rechtes Glas: Innenseite Mitte (180°) über außen bis Innenseite oben (147° + 360°)
+  for (let t = 180; t <= 360 + 180 - T_TOP; t += 1) {
+    const mirrored = ((180 - (t % 360)) % 360 + 360) % 360;
+    const bump = wingBump(mirrored);
+    const [x, y] = rimPoint(t * deg, R_A + bump, R_B + bump * 0.35, 1);
     shape.lineTo(CX + x, y);
   }
-  // Oberkante des Stegs
-  const P0 = pts[0];
-  shape.quadraticCurveTo(0, P0[1] - 0.1, P0[0], P0[1]);
+  // Oberkante des Stegs, minimal durchhängend
+  const P0 = left[0];
+  shape.quadraticCurveTo(0, P0[1] - 0.035, P0[0], P0[1]);
 
   for (const side of [-1, 1]) {
     const hole = new THREE.Path();
-    for (let t = 0; t <= 360; t += 2) {
-      const [x, y] = rimPoint(t * deg, R_A - RIM, R_B - RIM);
+    for (let t = 0; t <= 360; t += 1) {
+      const [x, y] = rimPoint(t * deg, R_A - RIM, R_B - RIM, side);
       if (t === 0) hole.moveTo(side * CX + x, y);
       else hole.lineTo(side * CX + x, y);
     }
@@ -201,57 +212,73 @@ function buildFrontShape() {
   return shape;
 }
 
-function bendGeometry(geo, k) {
+// Verformt z = z + f(x, y) und transformiert die Normalen exakt mit,
+// damit gebogene Flächen glatt schattiert bleiben (keine Facetten)
+function deformZ(geo, f, fx, fy) {
   const p = geo.attributes.position;
+  const n = geo.attributes.normal;
+  const v = new THREE.Vector3();
   for (let i = 0; i < p.count; i++) {
-    const x = p.getX(i);
-    p.setZ(i, p.getZ(i) - k * x * x);
+    const x = p.getX(i), y = p.getY(i);
+    p.setZ(i, p.getZ(i) + f(x, y));
+    const nz = n.getZ(i);
+    v.set(n.getX(i) - fx(x, y) * nz, n.getY(i) - fy(x, y) * nz, nz).normalize();
+    n.setXYZ(i, v.x, v.y, v.z);
   }
   p.needsUpdate = true;
-  geo.computeVertexNormals();
+  n.needsUpdate = true;
+}
+
+function bendGeometry(geo, k) {
+  deformZ(geo, (x) => -k * x * x, (x) => -2 * k * x, () => 0);
 }
 
 function buildLensGeometry(side) {
+  // Glas mit echter Dicke (Kante fängt Licht), sitzt in der Nut der Fassung
   const s = new THREE.Shape();
   const deg = Math.PI / 180;
-  for (let t = 0; t <= 360; t += 3) {
-    const [x, y] = rimPoint(t * deg, R_A - RIM + 0.04, R_B - RIM + 0.04);
-    if (t === 0) s.moveTo(side * CX + x, y);
-    else s.lineTo(side * CX + x, y);
+  for (let t = 0; t <= 360; t += 2) {
+    const [x, y] = rimPoint(t * deg, R_A - RIM + 0.012, R_B - RIM + 0.012, side);
+    if (t === 0) s.moveTo(x, y);
+    else s.lineTo(x, y);
   }
-  const geo = new THREE.ShapeGeometry(s, 24);
-  // leichte Wölbung der Gläser
-  const p = geo.attributes.position;
-  for (let i = 0; i < p.count; i++) {
-    const dx = p.getX(i) - side * CX, dy = p.getY(i);
-    p.setZ(i, 0.06 - 0.05 * (dx * dx + dy * dy));
-  }
-  geo.computeVertexNormals();
+  const geo = new THREE.ExtrudeGeometry(s, { depth: 0.035, bevelEnabled: false, curveSegments: 8 });
+  geo.translate(side * CX, 0, -0.0175);
+  // Basiskurve: Glas leicht nach vorne gewölbt
+  const cx = side * CX;
+  deformZ(
+    geo,
+    (x, y) => 0.035 - 0.04 * ((x - cx) ** 2 + y * y),
+    (x) => -0.08 * (x - cx),
+    (x, y) => -0.08 * y
+  );
   bendGeometry(geo, BEND);
   return geo;
 }
 
 function buildTempleGeometry() {
-  // Seitenprofil des Bügels (x = Länge nach hinten, y = Höhe)
-  const L = 5.3;
+  // Seitenprofil des Bügels (x = Länge nach hinten, y = Höhe), schlank und spitz zulaufend
+  const L = 5.4;
   const s = new THREE.Shape();
-  s.moveTo(0, 0.19);
-  s.bezierCurveTo(1.2, 0.2, 3.0, 0.12, L, 0.07);
-  // Ohrbiegung nach unten
-  s.bezierCurveTo(L + 0.55, 0.04, L + 0.95, -0.25, L + 1.15, -0.78);
-  s.bezierCurveTo(L + 1.19, -0.9, L + 1.06, -0.93, L + 1.01, -0.82);
-  s.bezierCurveTo(L + 0.82, -0.32, L + 0.5, -0.07, L, -0.05);
-  s.bezierCurveTo(3.0, -0.03, 1.2, -0.11, 0, -0.17);
-  s.lineTo(0, 0.19);
+  s.moveTo(0, 0.085);
+  s.bezierCurveTo(0.6, 0.085, 1.4, 0.06, 3.0, 0.048);
+  s.bezierCurveTo(4.2, 0.04, 4.9, 0.036, L, 0.032);
+  // Ohrbiegung
+  s.bezierCurveTo(L + 0.55, 0.026, L + 0.95, -0.25, L + 1.12, -0.76);
+  s.bezierCurveTo(L + 1.15, -0.85, L + 1.07, -0.87, L + 1.04, -0.79);
+  s.bezierCurveTo(L + 0.88, -0.3, L + 0.52, -0.03, L, -0.026);
+  s.bezierCurveTo(4.9, -0.03, 4.2, -0.034, 3.0, -0.042);
+  s.bezierCurveTo(1.4, -0.054, 0.6, -0.085, 0, -0.085);
+  s.lineTo(0, 0.085);
   const geo = new THREE.ExtrudeGeometry(s, {
-    depth: 0.1,
+    depth: 0.05,
     bevelEnabled: true,
-    bevelThickness: 0.03,
-    bevelSize: 0.03,
-    bevelSegments: 4,
-    curveSegments: 48,
+    bevelThickness: 0.018,
+    bevelSize: 0.016,
+    bevelSegments: 5,
+    curveSegments: 64,
   });
-  geo.translate(0, 0, -0.05);
+  geo.translate(0, 0, -0.025);
   geo.rotateY(Math.PI / 2); // Länge zeigt nach -z
   return geo;
 }
@@ -259,7 +286,7 @@ function buildTempleGeometry() {
 function buildRivetGeometry() {
   // Silberne Zierniete in Pfeilform (wie auf dem Produktfoto)
   const s = new THREE.Shape();
-  const w = 0.13, h = 0.045, n = 0.022;
+  const w = 0.1, h = 0.034, n = 0.016;
   s.moveTo(-w, 0);
   s.lineTo(-w * 0.55, h);
   s.lineTo(-w * 0.2, n);
@@ -272,10 +299,10 @@ function buildRivetGeometry() {
   s.lineTo(-w * 0.55, -h);
   s.closePath();
   return new THREE.ExtrudeGeometry(s, {
-    depth: 0.012,
+    depth: 0.008,
     bevelEnabled: true,
-    bevelThickness: 0.01,
-    bevelSize: 0.008,
+    bevelThickness: 0.006,
+    bevelSize: 0.005,
     bevelSegments: 2,
   });
 }
@@ -286,36 +313,57 @@ export function createMaterials(finish, renderer) {
   const map = acetateTexture(finish, renderer);
   const acetate = new THREE.MeshPhysicalMaterial({
     map,
-    roughness: 0.38,
+    // Eigenleuchten aus derselben Textur: helle Bernsteinflecken wirken
+    // durchscheinend wie echtes Acetat, dunkle Partien bleiben satt
+    emissiveMap: map,
+    emissive: new THREE.Color('#5a3416'),
+    emissiveIntensity: 0.55,
+    roughness: 0.28,
     metalness: 0,
+    ior: 1.49,
+    specularIntensity: 0.7,
     clearcoat: 1,
-    clearcoatRoughness: 0.04,
-    envMapIntensity: 0.9,
+    clearcoatRoughness: 0.025,
+    envMapIntensity: 1.0,
   });
   const lens = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
     metalness: 0,
-    roughness: 0.02,
+    roughness: 0.0,
     transparent: true,
-    opacity: 0.16,
+    opacity: 0.07,
+    ior: 1.6,
     clearcoat: 1,
-    envMapIntensity: 2.2,
+    clearcoatRoughness: 0,
+    envMapIntensity: 1.5,
     side: THREE.DoubleSide,
     depthWrite: false,
   });
-  const metal = new THREE.MeshStandardMaterial({
-    color: 0xe9e6e1,
-    metalness: 1,
-    roughness: 0.18,
-    envMapIntensity: 1.4,
+  const pad = new THREE.MeshPhysicalMaterial({
+    color: 0xf3ebe0,
+    roughness: 0.15,
+    transparent: true,
+    opacity: 0.45,
+    clearcoat: 1,
+    envMapIntensity: 1.6,
+    depthWrite: false,
   });
-  return { acetate, lens, metal };
+  const metal = new THREE.MeshStandardMaterial({
+    color: 0xe7e4df,
+    metalness: 1,
+    roughness: 0.14,
+    envMapIntensity: 1.5,
+  });
+  return { acetate, lens, pad, metal };
 }
 
 export function setFinish(model, finish, renderer) {
   const map = acetateTexture(finish, renderer);
-  model.userData.materials.acetate.map = map;
-  model.userData.materials.acetate.needsUpdate = true;
+  const m = model.userData.materials.acetate;
+  m.map = map;
+  m.emissiveMap = map;
+  m.emissiveIntensity = finish === 'onyx' ? 0.15 : 0.55;
+  m.needsUpdate = true;
   model.userData.finish = finish;
 }
 
@@ -330,8 +378,8 @@ export function createGlasses(finish = 'havana', renderer) {
   const frontGeo = new THREE.ExtrudeGeometry(buildFrontShape(), {
     depth: DEPTH,
     bevelEnabled: true,
-    bevelThickness: 0.055,
-    bevelSize: 0.05,
+    bevelThickness: BEVEL_T,
+    bevelSize: BEVEL_S,
     bevelSegments: 6,
     curveSegments: 64,
   });
@@ -346,20 +394,30 @@ export function createGlasses(finish = 'havana', renderer) {
     const lens = new THREE.Mesh(buildLensGeometry(side), mats.lens);
     lens.renderOrder = 2;
     group.add(lens);
+
+    // Transparente Nasenpads hinter dem Steg
+    const pad = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), mats.pad);
+    const px = side * (CX - R_A + 0.07);
+    pad.scale.set(0.05, 0.15, 0.03);
+    pad.position.set(px, -0.18, -DEPTH / 2 - BEVEL_T - 0.05 - BEND * px * px);
+    pad.rotation.set(0.25, side * 0.6, side * 0.35);
+    pad.renderOrder = 3;
+    group.add(pad);
   }
 
-  // Außenkante der Backen bestimmen
+  // Außenkante der Backen und Scharnierhöhe bestimmen
   frontGeo.computeBoundingBox();
   const maxX = frontGeo.boundingBox.max.x;
-  const hingeY = 0.42;
-  const backZ = -DEPTH / 2 - 0.05 - BEND * maxX * maxX;
+  const hingeY = rimPoint((152 * Math.PI) / 180, R_A, R_B)[1] + 0.02;
+  const backZ = -DEPTH / 2 - BEVEL_T - BEND * maxX * maxX;
 
   const templeGeo = buildTempleGeometry();
   const rivetGeo = buildRivetGeometry();
+  const hingeGeo = new THREE.CylinderGeometry(0.022, 0.022, 0.17, 20);
   for (const side of [-1, 1]) {
     // Bügel mit Scharnier-Pivot, leicht geöffnet
     const pivot = new THREE.Group();
-    pivot.position.set(side * (maxX - 0.1), hingeY, backZ + 0.02);
+    pivot.position.set(side * (maxX - 0.05), hingeY, backZ - 0.004);
     pivot.rotation.y = side * 0.07;
     const temple = new THREE.Mesh(templeGeo, mats.acetate);
     temple.castShadow = true;
@@ -369,20 +427,20 @@ export function createGlasses(finish = 'havana', renderer) {
     // Niete außen am Bügel
     const tr = new THREE.Mesh(rivetGeo, mats.metal);
     tr.rotation.y = side * Math.PI / 2;
-    tr.position.set(side * 0.084, 0.01, -0.62);
+    tr.position.set(side * 0.044, 0.004, -0.5);
     pivot.add(tr);
     group.add(pivot);
 
     // Niete vorne auf den Backen
     const fr = new THREE.Mesh(rivetGeo, mats.metal);
-    const fx = side * (maxX - 0.19);
-    fr.position.set(fx, hingeY + 0.02, DEPTH / 2 + 0.055 - BEND * fx * fx - 0.006);
+    const fx = side * (maxX - 0.13);
+    fr.position.set(fx, hingeY, DEPTH / 2 + BEVEL_T - BEND * fx * fx - 0.004);
     fr.rotation.y = -side * Math.atan(2 * BEND * Math.abs(fx));
     group.add(fr);
 
-    // Scharnierblock aus Metall (kaum sichtbar, sorgt für Tiefe)
-    const hinge = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.3, 16), mats.metal);
-    hinge.position.set(side * (maxX - 0.16), hingeY, backZ - 0.03);
+    // Scharnier aus Metall zwischen Front und Bügel
+    const hinge = new THREE.Mesh(hingeGeo, mats.metal);
+    hinge.position.set(side * (maxX - 0.07), hingeY, backZ - 0.03);
     group.add(hinge);
   }
 
@@ -394,16 +452,46 @@ export function createGlasses(finish = 'havana', renderer) {
   return group;
 }
 
+/* ---------- Studio-Umgebung für Reflexionen ---------- */
+
+function buildStudioEnvironment() {
+  // Dunkel-warmer Raum mit Softboxen: erzeugt lange, weiche Glanzlichter
+  // auf dem lackierten Acetat, wie bei Produktfotos
+  const env = new THREE.Scene();
+  const room = new THREE.Mesh(
+    new THREE.SphereGeometry(20, 32, 16),
+    new THREE.MeshBasicMaterial({ color: new THREE.Color('#3d3129'), side: THREE.BackSide })
+  );
+  env.add(room);
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(40, 40),
+    new THREE.MeshBasicMaterial({ color: new THREE.Color('#b9a58f') })
+  );
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = -6;
+  env.add(floor);
+  const box = (w, h, intensity, pos, look, tint = '#fff4e8') => {
+    const m = new THREE.MeshBasicMaterial({ color: new THREE.Color(tint).multiplyScalar(intensity), side: THREE.DoubleSide });
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m);
+    p.position.set(...pos);
+    p.lookAt(...look);
+    env.add(p);
+  };
+  box(10, 4, 5.5, [0, 9, 2], [0, 0, 0]);          // große Softbox oben
+  box(2, 9, 6, [-9, 2, 5], [0, 0, 0]);            // Streifenlicht links vorne
+  box(1.4, 8, 3.5, [9, 2, -5], [0, 0, 0], '#ffe2c4'); // warmes Kantenlicht hinten rechts
+  box(6, 2.5, 2, [3, 1, 10], [0, 0, 0]);          // Aufheller von vorne
+  return env;
+}
+
 /* ---------- Bühne: Licht, Umgebung, Schatten ---------- */
 
 export function createStage(renderer, { shadow = true } = {}) {
   const scene = new THREE.Scene();
   const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.userData.envPromise = import('three/addons/environments/RoomEnvironment.js').then(
-    ({ RoomEnvironment }) => {
-      scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.03).texture;
-    }
-  );
+  scene.environment = pmrem.fromScene(buildStudioEnvironment(), 0.025).texture;
+  pmrem.dispose();
+  scene.userData.envPromise = Promise.resolve();
 
   const key = new THREE.DirectionalLight(0xfff1e0, 2.4);
   key.position.set(-4, 8, 6);
