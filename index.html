@@ -25,7 +25,7 @@
     <nav class="nav__links" aria-label="Hauptnavigation">
       <a href="#handwerk">Handwerk</a>
       <a href="#details">Details</a>
-      <a href="#konfigurator">Konfigurator</a>
+      <a href="konfigurator.html">Konfigurator</a>
       <a href="#kollektion">Kollektion</a>
     </nav>
     <div class="nav__actions">
@@ -42,7 +42,7 @@
   <div class="mobile-menu" id="mobileMenu" hidden>
     <a href="#handwerk">Handwerk</a>
     <a href="#details">Details</a>
-    <a href="#konfigurator">Konfigurator</a>
+    <a href="konfigurator.html">Konfigurator</a>
     <a href="#kollektion">Kollektion</a>
   </div>
 </header>
@@ -58,7 +58,7 @@
       <h1 class="hero__title">Klarheit,<br>von Hand geformt.</h1>
       <p class="hero__sub">Italienisches Cellulose-Acetat, drei Tage trommelpoliert, mit silbernen Ziernieten.</p>
       <div class="hero__cta">
-        <a class="btn btn--neon" href="#konfigurator">Kaufen · 289 €</a>
+        <a class="btn btn--neon" href="konfigurator.html">Kaufen · ab 289 €</a>
         <a class="link-arrow" href="#handwerk">Mehr erfahren</a>
       </div>
     </div>
@@ -81,7 +81,7 @@
 <!-- ============ Foto ============ -->
 <section class="photo">
   <div class="photo__frame" id="photoFrame">
-    <img src="assets/panto-no01.jpg" alt="Luxlens Panto No. 01 in Havana-Schildpatt auf grauem Grund, Dreiviertelansicht" width="960" height="877" loading="lazy" id="photoImg">
+    <img src="assets/panto-no01-studio.jpg" alt="Luxlens Panto No. 01 in Havana-Schildpatt auf warmem Sandgrund, Dreiviertelansicht" width="1443" height="1315" loading="lazy" id="photoImg">
   </div>
   <div class="wrap photo__caption">
     <h2 class="h2">Das Muster ist einmalig.<br><span class="muted">Wie das Gesicht dahinter.</span></h2>
@@ -199,19 +199,19 @@
         <div class="swatches" id="swatches" role="radiogroup" aria-label="Farbe wählen"></div>
       </fieldset>
 
-      <fieldset class="choice">
-        <legend>Gläser</legend>
-        <div class="lens-options" id="lensOptions">
-          <label class="opt"><input type="radio" name="lens" id="lens-demo" value="demo" checked><span class="opt__name">Nur Fassung</span><span class="opt__price">inklusive</span></label>
-          <label class="opt"><input type="radio" name="lens" id="lens-single" value="single"><span class="opt__name">Einstärkengläser 1.6</span><span class="opt__price">+ 79 €</span></label>
-          <label class="opt"><input type="radio" name="lens" id="lens-blue" value="blue"><span class="opt__name">Einstärken mit Blaufilter</span><span class="opt__price">+ 119 €</span></label>
-          <label class="opt"><input type="radio" name="lens" id="lens-sun" value="sun"><span class="opt__name">Sonnenschutz Braun, UV400</span><span class="opt__price">+ 99 €</span></label>
-        </div>
-      </fieldset>
+      <ol class="config__steps" aria-label="Schritte im Konfigurator">
+        <li><span>Farbe</span><small>Vier Acetate, live in 3D</small></li>
+        <li><span>Größe</span><small>S, M oder L nach Kopfbreite</small></li>
+        <li><span>Gläser &amp; Sehstärke</span><small>Vom Demoglas bis Gleitsicht</small></li>
+        <li><span>Gravur</span><small>Dein Name im Bügel, kostenlos</small></li>
+      </ol>
 
       <div class="config__buy">
-        <p class="price"><span id="configPrice">289 €</span><small>inkl. MwSt. · Lieferung in 3–5 Werktagen</small></p>
-        <button class="btn btn--neon btn--lg" id="addConfig">In den Warenkorb</button>
+        <p class="price"><span>ab 289 €</span><small>inkl. MwSt. · kostenloser Versand</small></p>
+        <div class="config__actions">
+          <a class="btn btn--neon btn--lg" id="openConfigurator" href="konfigurator.html">Jetzt konfigurieren</a>
+          <button class="link-btn" type="button" id="quickAdd">Nur Fassung, Größe M in den Warenkorb</button>
+        </div>
       </div>
     </div>
   </div>
@@ -247,7 +247,7 @@
       <p class="footer__claim">Brillen aus Acetat, in kleiner Auflage gefertigt.</p>
     </div>
     <div class="footer__cols">
-      <div><h4>Shop</h4><a href="#kollektion">Kollektion</a><a href="#konfigurator">Konfigurator</a><a href="#details">Gläser</a></div>
+      <div><h4>Shop</h4><a href="#kollektion">Kollektion</a><a href="konfigurator.html">Konfigurator</a><a href="#details">Gläser</a></div>
       <div><h4>Service</h4><a href="#top">Versand</a><a href="#top">Rückgabe</a><a href="#top">Garantie</a></div>
       <div><h4>Luxlens</h4><a href="#handwerk">Handwerk</a><a href="#process">Atelier</a><a href="#top">Kontakt</a></div>
     </div>

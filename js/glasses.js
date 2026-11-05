@@ -154,7 +154,7 @@ function acetateTexture(finish, renderer) {
 const R_A = 1.0;          // halbe Glasbreite (≈ 24 mm)
 const R_B = 0.93;         // halbe Glashöhe
 const RIM = 0.095;        // Randstärke (plus Fase: ≈ 3,9 mm sichtbar)
-const CX = 1.17;          // Glasmittelpunkt-Abstand zur Mitte
+const CX = 1.3;           // Glasmittelpunkt-Abstand zur Mitte (breiterer Steg)
 const DEPTH = 0.14;       // Acetatstärke der Front (≈ 5 mm inkl. Fase)
 const BEND = 0.05;        // Frontbiegung (Wrap)
 const BEVEL_S = 0.035;    // Fasenbreite

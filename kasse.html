@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="de" style="--t: 1; --tf: 1">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Luxlens Kasse</title>
+<meta name="description" content="Bestellung abschließen: Lieferadresse, Versand und Zahlung.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Michroma&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/pages.css">
+</head>
+<body class="page page--checkout">
+
+<header class="nav nav--checkout">
+  <div class="nav__inner">
+    <a class="nav__logo" href="./" aria-label="Luxlens Startseite"><span class="logo"></span></a>
+    <p class="secure">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+      Sichere Kasse
+    </p>
+    <a class="link-arrow link-arrow--back" href="./#kollektion">Weiter einkaufen</a>
+  </div>
+</header>
+
+<main class="co" id="checkoutMain">
+  <div class="co__grid">
+    <form class="co__form" id="orderForm" novalidate>
+      <h1 class="co__title">Kasse</h1>
+      <p class="demo-note" role="note">Demo-Shop: Es wird nichts bezahlt und keine Bestellung verschickt. Deine Eingaben bleiben in diesem Browser.</p>
+
+      <fieldset class="co-sec">
+        <legend><i>1</i> Kontakt</legend>
+        <div class="field field--full">
+          <label for="email">E-Mail</label>
+          <input id="email" name="email" type="email" autocomplete="email" required placeholder="du@beispiel.de">
+          <p class="field__err" data-for="email"></p>
+        </div>
+        <label class="check" for="news"><input id="news" type="checkbox"> <span>Neue Acetate und Atelier-Termine per E-Mail erhalten</span></label>
+      </fieldset>
+
+      <fieldset class="co-sec">
+        <legend><i>2</i> Lieferadresse</legend>
+        <div class="fields">
+          <div class="field"><label for="first">Vorname</label><input id="first" autocomplete="given-name" required><p class="field__err" data-for="first"></p></div>
+          <div class="field"><label for="last">Nachname</label><input id="last" autocomplete="family-name" required><p class="field__err" data-for="last"></p></div>
+          <div class="field field--full"><label for="street">Straße und Hausnummer</label><input id="street" autocomplete="address-line1" required><p class="field__err" data-for="street"></p></div>
+          <div class="field field--full"><label for="extra">Adresszusatz <small>optional</small></label><input id="extra" autocomplete="address-line2"></div>
+          <div class="field field--zip"><label for="zip">PLZ</label><input id="zip" inputmode="numeric" autocomplete="postal-code" required><p class="field__err" data-for="zip"></p></div>
+          <div class="field field--city"><label for="city">Ort</label><input id="city" autocomplete="address-level2" required><p class="field__err" data-for="city"></p></div>
+          <div class="field field--full">
+            <label for="country">Land</label>
+            <select id="country" autocomplete="country">
+              <option value="DE" selected>Deutschland</option>
+              <option value="AT">Österreich</option>
+              <option value="CH">Schweiz</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="co-sec">
+        <legend><i>3</i> Versand</legend>
+        <div class="cfg-options" id="shippingOptions"></div>
+      </fieldset>
+
+      <fieldset class="co-sec">
+        <legend><i>4</i> Zahlung</legend>
+        <div class="cfg-options" id="paymentOptions"></div>
+        <p class="co-sec__hint">Die Zahlung läuft im nächsten Schritt über den gewählten Anbieter. Luxlens sieht und speichert keine Kartendaten.</p>
+      </fieldset>
+
+      <div class="co-submit">
+        <label class="check" for="terms"><input id="terms" type="checkbox" required> <span>Ich akzeptiere die AGB und habe die Widerrufsbelehrung gelesen.</span></label>
+        <p class="field__err" data-for="terms"></p>
+        <button class="btn btn--neon btn--lg btn--block" type="submit" id="placeOrder">Zahlungspflichtig bestellen · <span id="payTotal">0 €</span></button>
+      </div>
+    </form>
+
+    <aside class="co__summary" aria-labelledby="sumTitle">
+      <div class="co-sum">
+        <h2 id="sumTitle">Deine Bestellung</h2>
+        <div class="co-sum__items" id="sumItems"></div>
+        <div class="co-sum__rows">
+          <div><span>Zwischensumme</span><span id="sumSub">0 €</span></div>
+          <div><span>Versand</span><span id="sumShip">kostenlos</span></div>
+          <div class="co-sum__total"><span>Gesamt</span><span id="sumTotal">0 €</span></div>
+          <div class="co-sum__vat"><span>enthaltene MwSt. 19 %</span><span id="sumVat">0,00 €</span></div>
+        </div>
+        <ul class="co-sum__perks">
+          <li>30 Tage Rückgabe, wir holen die Brille ab</li>
+          <li>2 Jahre Garantie, Nachpolieren ein Leben lang</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <section class="co-empty" id="emptyState" hidden>
+    <h1 class="co__title">Dein Warenkorb ist leer.</h1>
+    <p>Stell dir deine Panto No. 01 im Konfigurator zusammen oder wähle eine Farbe aus der Kollektion.</p>
+    <div class="co-empty__actions">
+      <a class="btn btn--neon btn--lg" href="konfigurator.html">Zum Konfigurator</a>
+      <a class="link-arrow" href="./#kollektion">Zur Kollektion</a>
+    </div>
+  </section>
+
+  <section class="co-done" id="doneState" hidden aria-live="polite">
+    <div class="co-done__mark" aria-hidden="true">
+      <svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="M15 27l7 7 15-16"/></svg>
+    </div>
+    <p class="eyebrow">Bestellung <span id="orderNo"></span></p>
+    <h1 class="co__title" id="doneTitle">Danke.</h1>
+    <p class="co-done__lead" id="doneLead"></p>
+    <div class="co-done__box" id="doneItems"></div>
+    <p class="demo-note">Demo-Shop: Es wurde keine Zahlung ausgeführt und keine Bestellung übermittelt.</p>
+    <a class="btn btn--dark btn--lg" href="./">Zurück zur Startseite</a>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="module" src="js/checkout.js"></script>
+</body>
+</html>

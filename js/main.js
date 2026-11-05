@@ -1,4 +1,4 @@
-// Luxlens — Interaktion, Scroll-Effekte, 3D-Szenen und Warenkorb
+// Luxlens — Startseite: Scroll-Effekte, 3D-Szenen, Kollektion
 import * as THREE from 'three';
 import {
   createGlasses,
@@ -8,24 +8,17 @@ import {
   makeAcetateCanvas,
   FINISHES,
 } from './glasses.js';
+import {
+  $, $$, euro, BASE_PRICE, PRODUCT, FINISH_META,
+  initShop, addToCart, closeCart, closeMenu, loadDraft, saveDraft,
+} from './shop.js';
 
 const gsap = window.gsap;
 const ScrollTrigger = window.ScrollTrigger;
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const $ = (s, el = document) => el.querySelector(s);
-const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const lerp = (a, b, t) => a + (b - a) * t;
 const smooth = (a, b, v) => { const t = clamp((v - a) / (b - a)); return t * t * (3 - 2 * t); };
-const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
-
-const BASE_PRICE = 289;
-const LENSES = {
-  demo: { label: 'Nur Fassung', add: 0 },
-  single: { label: 'Einstärkengläser 1.6', add: 79 },
-  blue: { label: 'Einstärken mit Blaufilter', add: 119 },
-  sun: { label: 'Sonnenschutz Braun', add: 99 },
-};
 
 if (gsap && ScrollTrigger) gsap.registerPlugin(ScrollTrigger);
 
@@ -60,26 +53,9 @@ $$('a[href^="#"]').forEach((a) => {
     if (!el) return;
     e.preventDefault();
     closeMenu();
-    if (drawer.classList.contains('is-open')) closeCart();
+    closeCart();
     scrollToTarget(el);
   });
-});
-
-/* =========================================================
-   Navigation (Mobil-Menü)
-   ========================================================= */
-const menuToggle = $('#menuToggle');
-const mobileMenu = $('#mobileMenu');
-function closeMenu() {
-  menuToggle.setAttribute('aria-expanded', 'false');
-  menuToggle.setAttribute('aria-label', 'Menü öffnen');
-  mobileMenu.hidden = true;
-}
-menuToggle.addEventListener('click', () => {
-  const open = menuToggle.getAttribute('aria-expanded') !== 'true';
-  menuToggle.setAttribute('aria-expanded', String(open));
-  menuToggle.setAttribute('aria-label', open ? 'Menü schließen' : 'Menü öffnen');
-  mobileMenu.hidden = !open;
 });
 
 /* =========================================================
@@ -199,7 +175,7 @@ function renderHero() {
    KONFIGURATOR — zweite Szene, ziehbar, Farbwechsel
    ========================================================= */
 const configCanvas = $('#configCanvas');
-const config = { finish: 'havana', lens: 'demo', visible: false, rotY: -0.5, velY: 0, dragging: false, lastX: 0, idle: 0 };
+const config = { finish: loadDraft().finish, visible: false, rotY: -0.5, velY: 0, dragging: false, lastX: 0, idle: 0 };
 let cRenderer, cScene, cCamera, cModel;
 
 function initConfigurator() {
@@ -255,18 +231,9 @@ function renderConfig(dt) {
   cRenderer.render(cScene, cCamera);
 }
 
-function applyLensLook(model, lens) {
-  const m = model.userData.materials.lens;
-  if (lens === 'sun') { m.color.set('#4a2a14'); m.opacity = 0.78; }
-  else if (lens === 'blue') { m.color.set('#e9f0ff'); m.opacity = 0.2; }
-  else { m.color.set('#ffffff'); m.opacity = 0.16; }
-}
-
-function configPrice() { return BASE_PRICE + LENSES[config.lens].add; }
-
 function buildSwatches() {
   const wrap = $('#swatches');
-  Object.entries(FINISHES).forEach(([key, f]) => {
+  Object.entries(FINISH_META).forEach(([key, f]) => {
     const b = document.createElement('button');
     b.className = 'swatch';
     b.type = 'button';
@@ -278,13 +245,16 @@ function buildSwatches() {
     b.addEventListener('click', () => selectFinish(key));
     wrap.appendChild(b);
   });
+  $('#finishName').textContent = FINISH_META[config.finish].name;
+  $('#finishNote').textContent = FINISH_META[config.finish].note;
 }
 
 function selectFinish(key) {
   config.finish = key;
   $$('.swatch').forEach((s) => s.setAttribute('aria-checked', String(s.id === `swatch-${key}`)));
-  $('#finishName').textContent = FINISHES[key].name;
-  $('#finishNote').textContent = FINISHES[key].note;
+  $('#finishName').textContent = FINISH_META[key].name;
+  $('#finishNote').textContent = FINISH_META[key].note;
+  saveDraft({ ...loadDraft(), finish: key });
   if (cModel) {
     setFinish(cModel, key, cRenderer);
     config.velY += 0.12; // kleiner Dreh-Impuls beim Farbwechsel
@@ -292,32 +262,27 @@ function selectFinish(key) {
   }
 }
 
-$$('#lensOptions input').forEach((input) => {
-  input.addEventListener('change', () => {
-    config.lens = input.value;
-    $('#configPrice').textContent = euro.format(configPrice());
-    if (cModel) applyLensLook(cModel, config.lens);
-  });
-});
-$('#addConfig').addEventListener('click', () => addToCart(config.finish, config.lens));
+// Gewählte Farbe in den Konfigurator mitnehmen
+$('#openConfigurator').addEventListener('click', () => saveDraft({ ...loadDraft(), finish: config.finish }));
+$('#quickAdd').addEventListener('click', () => addToCart({ finish: config.finish, size: 'M', lens: 'demo' }));
 
 /* =========================================================
    KOLLEKTION — Produktbilder aus dem 3D-Modell gerendert
    ========================================================= */
 function buildCards() {
   const cards = $('#cards');
-  Object.entries(FINISHES).forEach(([key, f]) => {
+  Object.entries(FINISH_META).forEach(([key, f]) => {
     const el = document.createElement('article');
     el.className = 'card';
     el.dataset.reveal = '';
     el.innerHTML = `
-      <div class="card__img"><img alt="Panto No. 01 in ${f.name}" data-thumb="${key}" width="800" height="600"></div>
-      <div class="card__meta"><h3>Panto No. 01 · ${f.name}</h3><p>${f.note}</p></div>
+      <div class="card__img"><img alt="${PRODUCT} in ${f.name}" data-thumb="${key}" width="800" height="600"></div>
+      <div class="card__meta"><h3>${PRODUCT} · ${f.name}</h3><p>${f.note}</p></div>
       <div class="card__buy"><span class="card__price">${euro.format(BASE_PRICE)}</span>
         <button class="btn btn--neon" type="button" data-add="${key}">Hinzufügen</button></div>`;
     cards.appendChild(el);
   });
-  $$('[data-add]', cards).forEach((b) => b.addEventListener('click', () => addToCart(b.dataset.add, 'demo')));
+  $$('[data-add]', cards).forEach((b) => b.addEventListener('click', () => addToCart({ finish: b.dataset.add, size: 'M', lens: 'demo' })));
 }
 
 async function renderThumbnails() {
@@ -345,91 +310,6 @@ async function renderThumbnails() {
   }
   r.dispose();
   r.forceContextLoss();
-}
-
-/* =========================================================
-   WARENKORB
-   ========================================================= */
-const drawer = $('#drawer');
-const scrim = $('#scrim');
-const cartBtn = $('#cartOpen');
-let cart = [];
-let lastFocus = null;
-
-try { cart = JSON.parse(localStorage.getItem('luxlens-cart') || '[]') || []; } catch { cart = []; }
-const saveCart = () => { try { localStorage.setItem('luxlens-cart', JSON.stringify(cart)); } catch { /* ohne Speicher weiter */ } };
-
-function addToCart(finish, lens) {
-  const id = `${finish}-${lens}`;
-  const existing = cart.find((i) => i.id === id);
-  if (existing) existing.qty += 1;
-  else cart.push({ id, finish, lens, qty: 1 });
-  saveCart();
-  renderCart();
-  cartBtn.classList.remove('is-bump');
-  void cartBtn.offsetWidth;
-  cartBtn.classList.add('is-bump');
-  toast(`<b>✓</b> Panto No. 01 · ${FINISHES[finish].name} im Warenkorb`);
-}
-
-function itemPrice(i) { return (BASE_PRICE + LENSES[i.lens].add) * i.qty; }
-
-function renderCart() {
-  const count = cart.reduce((n, i) => n + i.qty, 0);
-  $('#cartCount').textContent = count;
-  const list = $('#cartItems');
-  list.innerHTML = '';
-  cart.forEach((i) => {
-    const f = FINISHES[i.finish];
-    const row = document.createElement('div');
-    row.className = 'item';
-    row.innerHTML = `
-      <div class="item__swatch" style="background:${f.swatch}"></div>
-      <div><p class="item__name">Panto No. 01 · ${f.name}</p><p class="item__sub">${LENSES[i.lens].label}</p>
-        <div class="qty"><button type="button" aria-label="Menge verringern" data-dec>−</button><span>${i.qty}</span><button type="button" aria-label="Menge erhöhen" data-inc>+</button></div></div>
-      <div class="item__right"><span class="item__price">${euro.format(itemPrice(i))}</span><button class="item__remove" type="button" data-rm>Entfernen</button></div>`;
-    $('[data-inc]', row).addEventListener('click', () => { i.qty += 1; saveCart(); renderCart(); });
-    $('[data-dec]', row).addEventListener('click', () => { i.qty -= 1; if (i.qty < 1) cart = cart.filter((x) => x !== i); saveCart(); renderCart(); });
-    $('[data-rm]', row).addEventListener('click', () => { cart = cart.filter((x) => x !== i); saveCart(); renderCart(); });
-    list.appendChild(row);
-  });
-  const empty = cart.length === 0;
-  $('#cartEmpty').hidden = !empty;
-  $('#cartFoot').hidden = empty;
-  list.hidden = empty;
-  $('#cartSubtotal').textContent = euro.format(cart.reduce((s, i) => s + itemPrice(i), 0));
-}
-
-function openCart() {
-  lastFocus = document.activeElement;
-  scrim.hidden = false;
-  requestAnimationFrame(() => scrim.classList.add('is-open'));
-  drawer.classList.add('is-open');
-  drawer.setAttribute('aria-hidden', 'false');
-  lenis?.stop();
-  setTimeout(() => $('#cartClose').focus(), 50);
-}
-function closeCart() {
-  scrim.classList.remove('is-open');
-  drawer.classList.remove('is-open');
-  drawer.setAttribute('aria-hidden', 'true');
-  setTimeout(() => { scrim.hidden = true; }, 450);
-  lenis?.start();
-  lastFocus?.focus?.();
-}
-cartBtn.addEventListener('click', openCart);
-$('#cartClose').addEventListener('click', closeCart);
-scrim.addEventListener('click', closeCart);
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && drawer.classList.contains('is-open')) closeCart(); });
-$('#checkout').addEventListener('click', () => toast('Demo-Shop: Die Kasse ist noch nicht angebunden.'));
-
-let toastTimer;
-function toast(html) {
-  const t = $('#toast');
-  t.innerHTML = html;
-  t.classList.add('is-show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('is-show'), 2600);
 }
 
 /* =========================================================
@@ -530,9 +410,9 @@ function initScrollFx() {
    START
    ========================================================= */
 updateHeroTheme();
+initShop({ lenis });
 buildSwatches();
 buildCards();
-renderCart();
 initScrollFx();
 
 let webgl = true;
