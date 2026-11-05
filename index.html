@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de">
+<html lang="de" class="hero-top">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -47,16 +47,12 @@
 <!-- ============ Hero mit 3D-Modell ============ -->
 <section class="hero" id="hero">
   <div class="hero__sticky">
-    <canvas class="hero__canvas" id="heroCanvas" aria-label="3D-Modell der Luxlens Panto No. 01 in Havana"></canvas>
-    <div class="hero__intro" id="heroIntro">
-      <p class="eyebrow">Neu · Panto No. 01</p>
-      <h1 class="hero__title">Klarheit,<br>von Hand geformt.</h1>
-      <p class="hero__sub">Italienisches Cellulose-Acetat, drei Tage trommelpoliert, mit silbernen Ziernieten.</p>
-      <div class="hero__cta">
-        <a class="btn btn--neon" href="konfigurator.html">Kaufen · ab 289 €</a>
-        <a class="link-arrow" href="#handwerk">Mehr erfahren</a>
-      </div>
+    <div class="hero__photo" id="heroPhoto">
+      <img id="photoBare" src="assets/hero-portrait-bare.jpg" alt="" width="1307" height="1203">
+      <img id="photoGlasses" src="assets/hero-portrait.jpg" alt="Porträt mit der Luxlens Panto No. 01 in Havana" width="1307" height="1203" fetchpriority="high">
     </div>
+    <canvas class="hero__canvas" id="heroCanvas" aria-label="3D-Modell der Luxlens Panto No. 01 in Havana"></canvas>
+    <a class="hero__logo" id="heroLogo" href="#top" aria-label="Luxlens"><span class="logo"></span></a>
     <div class="hero__callouts" aria-hidden="true">
       <div class="callout callout--a" id="calloutA"><span class="callout__k">Front</span><span class="callout__v">Aus einer 8 mm Acetatplatte gefräst</span></div>
       <div class="callout callout--b" id="calloutB"><span class="callout__k">Steg</span><span class="callout__v">Schlüsselloch-Steg mit Nasenauflage</span></div>

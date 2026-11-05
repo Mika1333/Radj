@@ -161,27 +161,29 @@
 
   /* ---------- Geometrie ---------- */
   // Runde Panto-Form wie auf dem Produktfoto
-  const R_A = 1.0;          // halbe Glasbreite (≈ 24 mm)
-  const R_B = 0.93;         // halbe Glashöhe
-  const RIM = 0.095;        // Randstärke (plus Fase: ≈ 3,9 mm sichtbar)
-  const CX = 1.3;           // Glasmittelpunkt-Abstand zur Mitte (breiterer Steg)
-  const DEPTH = 0.14;       // Acetatstärke der Front (≈ 5 mm inkl. Fase)
+  // Maße nach dem Kampagnenfoto: Glas 168 × 140 px, Rand 14 px, Glasmitten 266 px auseinander
+  // (die Fase legt außen und innen je BEVEL_S drauf)
+  const R_A = 0.945;        // halbe Außenbreite eines Glasrings
+  const R_B = 0.805;        // halbe Außenhöhe (flacher als breit)
+  const RIM = 0.07;         // Randstärke ohne Fase, sichtbar ≈ 0,14
+  const CX = 1.33;          // Glasmittelpunkt-Abstand zur Mitte
+  const DEPTH = 0.16;       // Acetatstärke der Front
   const BEND = 0.05;        // Frontbiegung (Wrap)
   const BEVEL_S = 0.035;    // Fasenbreite
-  const BEVEL_T = 0.04;     // Fasentiefe
+  const BEVEL_T = 0.045;    // Fasentiefe
 
   // Panto-Kontur: rund mit leicht abgeflachter Oberkante
   function rimPoint(theta, a, b) {
     const s = Math.sin(theta);
     const c = Math.cos(theta);
-    const y = s > 0 ? b * Math.pow(s, 0.8) : b * s;
+    const y = s > 0 ? b * Math.pow(s, 0.6) : b * s; // gerade Oberkante, runde Unterseite
     return [a * c, y];
   }
 
   // Ausformung für die Backen (Endstücke) an der Außenseite oben
   function wingBump(thetaLocal) {
-    const d = (thetaLocal - 157) / 22;
-    return Math.abs(d) < 1 ? 0.1 * 0.5 * (1 + Math.cos(Math.PI * d)) : 0;
+    const d = (thetaLocal - 158) / 22;
+    return Math.abs(d) < 1 ? 0.24 * 0.5 * (1 + Math.cos(Math.PI * d)) : 0;
   }
 
   function buildFrontShape() {
@@ -189,7 +191,7 @@
     const deg = Math.PI / 180;
     const pts = [];
     // Linkes Glas: von oben-innen (50°) gegen den Uhrzeigersinn bis unten-innen (325°)
-    for (let t = 50; t <= 325; t += 2) {
+    for (let t = 37; t <= 346; t += 1) {
       const bump = wingBump(t);
       const [x, y] = rimPoint(t * deg, R_A + bump, R_B + bump * 0.6);
       pts.push([-CX + x, y]);
@@ -198,11 +200,11 @@
     shape.moveTo(pts[0][0], pts[0][1]);
     for (let i = 1; i < pts.length; i++) shape.lineTo(pts[i][0], pts[i][1]);
     // Schlüsselloch-Steg: Bogen nach oben bis Scheitel
-    const apexY = 0.42;
-    shape.bezierCurveTo(L[0] + 0.2, L[1] + 0.32, -0.19, apexY, 0, apexY);
-    shape.bezierCurveTo(0.19, apexY, -L[0] - 0.2, L[1] + 0.32, -L[0], L[1]);
+    const apexY = 0.38;
+    shape.bezierCurveTo(L[0] + 0.07, L[1] + 0.25, -0.2, apexY, 0, apexY);
+    shape.bezierCurveTo(0.2, apexY, -L[0] - 0.07, L[1] + 0.25, -L[0], L[1]);
     // Rechtes Glas: von unten-innen (215°) über außen bis oben-innen (130°+360°)
-    for (let t = 215; t <= 490; t += 2) {
+    for (let t = 194; t <= 503; t += 1) {
       const mirrored = 180 - (t % 360);
       const bump = wingBump(((mirrored % 360) + 360) % 360);
       const [x, y] = rimPoint(t * deg, R_A + bump, R_B + bump * 0.6);
@@ -210,7 +212,7 @@
     }
     // Oberkante des Stegs
     const P0 = pts[0];
-    shape.quadraticCurveTo(0, P0[1] - 0.07, P0[0], P0[1]);
+    shape.quadraticCurveTo(0, P0[1] - 0.04, P0[0], P0[1]);
 
     for (const side of [-1, 1]) {
       const hole = new THREE.Path();
@@ -455,7 +457,7 @@
     // Außenkante der Backen bestimmen
     frontGeo.computeBoundingBox();
     const maxX = frontGeo.boundingBox.max.x;
-    const hingeY = 0.42;
+    const hingeY = 0.5;
     const backZ = -DEPTH / 2 - BEVEL_T + 0.005 - BEND * maxX * maxX;
 
     const templeGeo = buildTempleGeometry();
@@ -469,7 +471,9 @@
       // Bügel mit Scharnier-Pivot, leicht geöffnet
       const pivot = new THREE.Group();
       pivot.position.set(side * (maxX - 0.08), hingeY, backZ + 0.015);
-      pivot.rotation.y = side * 0.07;
+      pivot.rotation.y = side * 0.1;
+      group.userData.pivots = group.userData.pivots || [];
+      group.userData.pivots.push(pivot);
       const temple = new THREE.Mesh(templeGeo, mats.acetate);
       temple.castShadow = true;
       temple.receiveShadow = true;
@@ -502,6 +506,9 @@
     const center = box.getCenter(new THREE.Vector3());
     group.children.forEach((c) => c.position.sub(new THREE.Vector3(0, center.y, center.z)));
     group.userData.size = box.getSize(new THREE.Vector3());
+    // Mitte zwischen den Gläsern (für die Ausrichtung auf dem Foto)
+    group.userData.eyeCenter = new THREE.Vector3(0, -center.y, DEPTH / 2 - center.z);
+    group.userData.eyeSpacing = 2 * CX;
     return group;
   }
 

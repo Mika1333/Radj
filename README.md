@@ -2,7 +2,7 @@
 
 Produktseite für die Brillenmarke **Luxlens** mit der Fassung *Panto No. 01*.
 
-- **3D-Hero:** prozedural gebautes Three.js-Modell der Panto-Brille (Schildpatt-Acetat, Schlüsselloch-Steg, silberne Zierniete), das sich beim Scrollen langsam dreht.
+- **Hero:** Startbild ist ein Porträt in grünem Duoton. Beim Scrollen hebt die Brille von der Nase ab, wird zum Three.js-Modell (Schildpatt-Acetat, Schlüsselloch-Steg, silberne Zierniete) und dreht sich ins Bild. Oben steht nur das Logo, die Navigation erscheint danach.
 - **Smooth Scrolling:** Lenis + GSAP ScrollTrigger (Wort-für-Wort-Text, Foto-Reveal, horizontaler Prozess-Abschnitt, hochzählende Kennzahlen).
 - **Konfigurator (`konfigurator.html`):** eigene Seite mit sechs Schritten (Farbe, Größe, Gläser, Sehstärke, Gravur, Übersicht), jeder Schritt mit eigener Adresse (`#farbe`, `#groesse` …), live 3D-Vorschau und Preis.
 - **Kasse (`kasse.html`):** Kontakt, Lieferadresse mit Prüfung, Versand- und Zahlungsart, Bestellübersicht mit MwSt. und Bestätigungsseite. Demo ohne echte Zahlung.

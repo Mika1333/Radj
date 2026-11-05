@@ -66,63 +66,143 @@
   });
 
   /* =========================================================
-     HERO — 3D-Brille, dreht sich beim Scrollen
+     HERO — Porträt als erstes Bild. Beim Scrollen hebt die Brille
+     von der Nase ab, wird zum 3D-Modell und dreht sich ins Bild.
      ========================================================= */
   const hero = $('#hero');
   const heroCanvas = $('#heroCanvas');
-  const heroState = { progress: 0, visible: true, pointerX: 0, pointerY: 0 };
-  let heroRenderer, heroScene, heroCamera, heroHolder, heroModel;
+  const photoGlasses = $('#photoGlasses');   // Foto mit Brille
+  const photoBare = $('#photoBare');         // Foto ohne Brille, unscharf (Fokus auf der Brille)
+  const heroLogo = $('#heroLogo');
+  // Lage der Brille im Foto (Pixel im Originalbild): Mitte zwischen den Gläsern,
+  // Abstand der Glasmitten, Neigung und leichte Drehung des Kopfes
+  const PHOTO = { w: 1307, h: 1203, eyeX: 679, eyeY: 570.5, eyeDist: 266, tilt: 0.049, yaw: 0.12 };
+  const CAM_DIST = 30, CAM_FOV = 14;          // lange Brennweite wie beim Porträt
+  const heroState = { visible: true, pointerX: 0, pointerY: 0, gl: false };
+  let heroRenderer, heroScene, heroCamera, heroHolder, heroModel, headAnchor;
+  let K = null;                               // Schlüsselposen
 
   function initHero() {
+    if (reduceMotion) return;                 // ruhiges Standbild ohne Animation
     heroRenderer = new THREE.WebGLRenderer({ canvas: heroCanvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
     heroRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_DPR));
     configureRenderer(heroRenderer);
     heroScene = createStage(heroRenderer);
-    heroCamera = new THREE.PerspectiveCamera(26, 1, 0.1, 200);
+    heroCamera = new THREE.PerspectiveCamera(CAM_FOV, 1, 0.1, 400);
     heroModel = createGlasses('havana', heroRenderer);
     heroHolder = new THREE.Group();
     heroHolder.add(heroModel);
     heroScene.add(heroHolder);
+
+    // Unsichtbarer Kopf (nur Tiefe): verdeckt Bügel und Ohrbügel, solange die Brille sitzt
+    headAnchor = new THREE.Group();
+    const head = new THREE.Mesh(new THREE.SphereGeometry(1, 40, 28), new THREE.MeshBasicMaterial({ colorWrite: false }));
+    head.scale.set(3.7, 4.4, 3.7);
+    head.position.set(0, 0.35, -4.45);
+    head.renderOrder = -1;
+    headAnchor.add(head);
+    heroScene.add(headAnchor);
+
+    heroState.gl = true;
+    document.documentElement.classList.add('hero-gl');
     resizeHero();
     window.addEventListener('resize', resizeHero);
-
     window.addEventListener('pointermove', (e) => {
       heroState.pointerX = (e.clientX / window.innerWidth) * 2 - 1;
       heroState.pointerY = (e.clientY / window.innerHeight) * 2 - 1;
     }, { passive: true });
-
     new IntersectionObserver(([entry]) => { heroState.visible = entry.isIntersecting; }).observe(hero);
   }
 
-  let heroViewH = 1;
+  const tmpV = THREE ? new THREE.Vector3() : null;
+  const tmpE = THREE ? new THREE.Euler() : null;
+  // Holder-Position, bei der die Glasmitte des Modells auf `target` liegt
+  function poseAt(target, rot, s) {
+    tmpE.set(rot[0], rot[1], rot[2]);
+    tmpV.copy(heroModel.userData.eyeCenter).multiplyScalar(s).applyEuler(tmpE);
+    return { x: target.x - tmpV.x, y: target.y - tmpV.y, z: target.z - tmpV.z, rx: rot[0], ry: rot[1], rz: rot[2], s };
+  }
+
   function resizeHero() {
+    if (!heroState.gl) return;
     const w = heroCanvas.clientWidth, h = heroCanvas.clientHeight;
     if (!w || !h) return;
     heroRenderer.setSize(w, h, false);
     const aspect = w / h;
     heroCamera.aspect = aspect;
-    const tan = Math.tan(THREE.MathUtils.degToRad(heroCamera.fov / 2));
-    const fraction = aspect > 1 ? 0.42 : aspect > 0.75 ? 0.66 : 0.86;
-    const dist = Math.max(5.6 / (fraction * 2 * tan * aspect), 11);
-    heroCamera.position.set(0, 1.1, dist);
+    heroCamera.position.set(0, 0, CAM_DIST);
     heroCamera.lookAt(0, 0, 0);
     heroCamera.updateProjectionMatrix();
-    heroViewH = 2 * dist * tan;
+    const tan = Math.tan(THREE.MathUtils.degToRad(CAM_FOV / 2));
+    const visH = 2 * CAM_DIST * tan, visW = visH * aspect;
+    const upp = visH / h;                     // Welteinheiten pro Pixel auf der Bildebene
+
+    // Brille im Foto: Bildschirmposition und Größe
+    const r = photoGlasses.getBoundingClientRect();
+    const c = heroCanvas.getBoundingClientRect();
+    if (!r.width || !c.width) return;          // Foto noch nicht gelayoutet
+    const k = r.width / PHOTO.w;
+    const ex = r.left - c.left + PHOTO.eyeX * k;
+    const ey = r.top - c.top + PHOTO.eyeY * k;
+    const s0 = (PHOTO.eyeDist * k * upp) / (heroModel.userData.eyeSpacing * Math.cos(PHOTO.yaw));
+    const onFace = new THREE.Vector3((ex - w / 2) * upp, -(ey - h / 2) * upp, 0);
+
+    // Endgröße: Brille füllt einen Teil der Breite, je nach Format
+    const frac = aspect > 1 ? 0.42 : aspect > 0.75 ? 0.56 : 0.6;
+    const sF = Math.min((frac * visW) / 5.6, (0.42 * visH) / 1.9);
+    const center = new THREE.Vector3(aspect > 1 ? 0.05 * visW : 0, 0, 0);
+    const lifted = onFace.clone().add(new THREE.Vector3(0, 0.12 * visH, 7));
+
+    // Posen beschreiben, wo die Glasmitte liegt: so kippt die Brille um die Gläser,
+    // nicht um die Bügelmitte, und bleibt beim Abheben vor dem Gesicht
+    const eyePose = (t, rot, sc) => ({ x: t.x, y: t.y, z: t.z, rx: rot[0], ry: rot[1], rz: rot[2], s: sc });
+    const centered = (rot, sc) => {
+      // Modellmitte in die Bildmitte, daraus die Lage der Glasmitte
+      tmpE.set(rot[0], rot[1], rot[2]);
+      const e = heroModel.userData.eyeCenter.clone().multiplyScalar(sc).applyEuler(tmpE).add(center);
+      return eyePose(e, rot, sc);
+    };
+    K = {
+      face: eyePose(onFace, [0, PHOTO.yaw, PHOTO.tilt], s0),
+      lift: eyePose(lifted, [0.34, 0.04, 0], s0 * 1.04),
+      center: centered([0.3, -0.62, 0], sF),
+      end: centered([0.16, 0.58, 0], sF),
+    };
+    // Kopf bleibt dort, wo die Brille im Foto sitzt
+    headAnchor.position.copy(onFace);
+    headAnchor.rotation.set(0, PHOTO.yaw, PHOTO.tilt);
+    headAnchor.scale.setScalar(s0);
+    current = null;
   }
 
-  /* Farbübergang: Hero startet in Dunkelgrün und wird beim Scrollen beige */
+  /* Farben, Fotos, Navigation: hängen nur am Scrollstand (auch ohne WebGL) */
   const rootStyle = document.documentElement.style;
+  const rootClass = document.documentElement.classList;
   let lastT = -1, lastTf = -1;
   function updateHeroTheme() {
-    let t, tf;
+    const rect = hero.getBoundingClientRect();
+    let p, t, tf;
     if (reduceMotion) {
-      const past = hero.getBoundingClientRect().bottom <= 60;
-      t = tf = past ? 1 : 0;
+      const past = rect.bottom <= 60;
+      p = 0; t = tf = past ? 1 : 0;
+      rootClass.toggle('hero-top', !past);
     } else {
-      const p = heroProgress();
-      t = smooth(0.08, 0.45, p);
-      tf = smooth(0.2, 0.3, p);
+      p = heroProgress();
+      t = smooth(0.9, 1.0, p);
+      tf = smooth(0.9, 0.97, p);
+      rootClass.toggle('hero-top', rect.bottom > 0 && p < 0.9);
     }
+    if (heroState.gl) {
+      // Brille im Foto wird zur 3D-Brille, das Gesicht tritt unscharf zurück
+      photoGlasses.style.opacity = String(1 - smooth(0.02, 0.07, p));
+      const o = smooth(0.004, 0.035, p);
+      heroCanvas.style.opacity = String(o);
+      heroCanvas.style.visibility = o > 0 ? 'visible' : 'hidden';
+      heroState.canvasOn = o > 0;
+      photoBare.style.opacity = String(1 - smooth(0.2, 0.46, p));
+      photoBare.style.transform = `scale(${1 + 0.1 * smooth(0.02, 0.5, p)})`;
+    }
+    heroLogo.style.opacity = String(1 - smooth(0.84, 0.92, p));
     t = Math.round(t * 1000) / 1000;
     tf = Math.round(tf * 1000) / 1000;
     if (t !== lastT) { rootStyle.setProperty('--t', t); lastT = t; }
@@ -137,30 +217,43 @@
     return total > 0 ? clamp(-r.top / total) : 0;
   }
 
-  const current = { rx: 0.42, ry: -0.7, y: -2, s: 0.66 };
+  const mixPose = (a, b, t) => {
+    const o = {};
+    for (const key in a) o[key] = lerp(a[key], b[key], t);
+    return o;
+  };
+  let current = null;
   const clock = THREE ? new THREE.Clock() : null;
   function renderHero() {
+    if (!K) return;
     const p = heroProgress();
-    heroState.progress = p;
-    const t = clock.getElapsedTime();
-    const enter = smooth(0.0, 0.32, p);
-    const turn = smooth(0.0, 1.0, p);
+    const time = clock.getElapsedTime();
+    const lift = smooth(0.03, 0.3, p);       // von der Nase nach vorn oben
+    const turn = smooth(0.3, 0.58, p);        // in die Bildmitte, Dreiviertelansicht
+    const spin = smooth(0.58, 1.0, p);        // langsame Drehung
+    let target = mixPose(mixPose(mixPose(K.face, K.lift, lift), K.center, turn), K.end, spin);
 
-    // Zielwerte: leichte Drehung um die Hochachse, Kippen, Heranfahren
-    const target = {
-      ry: lerp(-0.7, 0.62, turn) + heroState.pointerX * 0.07,
-      rx: lerp(0.42, 0.16, enter) + heroState.pointerY * 0.04,
-      y: lerp(-heroViewH * 0.24, -heroViewH * 0.03, enter),
-      s: lerp(0.66, 1.0, enter),
-    };
-    const k = reduceMotion ? 1 : 0.08;
-    for (const key in target) current[key] = lerp(current[key], target[key], k);
+    // Maus und leichtes Schweben erst, wenn die Brille frei ist
+    const free = smooth(0.35, 0.6, p);
+    target.ry += heroState.pointerX * 0.07 * free;
+    target.rx += heroState.pointerY * 0.04 * free;
+    target.y += Math.sin(time * 0.9) * 0.04 * free * target.s;
 
-    heroHolder.rotation.set(current.rx, current.ry, 0);
-    heroHolder.position.y = current.y + Math.sin(t * 0.9) * 0.05;
+    // Am Anfang exakt auf dem Foto, danach weich nachgeführt
+    current = !current || p < 0.004 ? target : mixPose(current, target, 0.14);
+    const hp = poseAt(new THREE.Vector3(current.x, current.y, current.z), [current.rx, current.ry, current.rz], current.s);
+    heroHolder.position.set(hp.x, hp.y, hp.z);
+    heroHolder.rotation.set(current.rx, current.ry, current.rz);
     heroHolder.scale.setScalar(current.s);
-    if (heroScene.userData.ground) heroScene.userData.ground.position.y = current.y - 1.7 * current.s;
 
+    // Bügel sitzen am Kopf eng an, danach öffnen sie sich leicht
+    heroModel.userData.pivots.forEach((pv, i) => { pv.rotation.y = (i ? 1 : -1) * lerp(0.16, 0.1, lift); });
+    headAnchor.visible = lift < 0.55;
+    const ground = heroScene.userData.ground;
+    if (ground) {
+      ground.material.opacity = 0.22 * smooth(0.42, 0.62, p);
+      ground.position.y = hp.y - 1.8 * current.s;
+    }
     heroRenderer.render(heroScene, heroCamera);
   }
 
@@ -317,23 +410,21 @@
   function initScrollFx() {
     if (!gsap || !ScrollTrigger || reduceMotion) return;
 
-    // Hero: Einstieg beim Laden
-    gsap.from('#heroIntro > *', { y: 40, opacity: 0, duration: 1.4, ease: 'expo.out', stagger: 0.08, delay: 0.15 });
-    gsap.from(heroCanvas, { opacity: 0, duration: 2, ease: 'power2.out', delay: 0.3 });
+    // Hero: Logo erscheint beim Laden
+    gsap.from('#heroLogo', { y: -16, opacity: 0, duration: 1.4, ease: 'expo.out', delay: 0.2, clearProps: 'transform' });
 
     // Hero: Text blendet aus, Callouts erscheinen nacheinander
     const tl = gsap.timeline({
       scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom bottom', scrub: 0.6 },
       defaults: { ease: 'none' },
     });
-    // Hinweise erscheinen erst, wenn der Hintergrund schon beige ist
-    tl.to('#heroIntro', { opacity: 0, y: -90, scale: 0.96, duration: 0.16 }, 0)
-      .fromTo('#calloutA', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.07 }, 0.44)
-      .to('#calloutA', { opacity: 0, y: -30, duration: 0.07 }, 0.6)
-      .fromTo('#calloutB', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.07 }, 0.6)
-      .to('#calloutB', { opacity: 0, y: -30, duration: 0.07 }, 0.76)
-      .fromTo('#calloutC', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.07 }, 0.76)
-      .to('#calloutC', { opacity: 0, y: -30, duration: 0.06 }, 0.94);
+    // Hinweise erscheinen, sobald die Brille frei im Raum schwebt (noch auf Grün)
+    tl.fromTo('#calloutA', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.05 }, 0.56)
+      .to('#calloutA', { opacity: 0, y: -30, duration: 0.05 }, 0.67)
+      .fromTo('#calloutB', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.05 }, 0.67)
+      .to('#calloutB', { opacity: 0, y: -30, duration: 0.05 }, 0.77)
+      .fromTo('#calloutC', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.05 }, 0.77)
+      .to('#calloutC', { opacity: 0, y: -30, duration: 0.04 }, 0.86);
 
     // Statement: Wort für Wort aufhellen
     const words = splitWords($('#statementText'));
@@ -402,7 +493,6 @@
   /* =========================================================
      START
      ========================================================= */
-  updateHeroTheme();
   initShop({ lenis });
   buildSwatches();
   buildCards();
@@ -414,22 +504,27 @@
     initConfigurator();
   } catch (err) {
     webgl = false;
+    heroState.gl = false;
+    document.documentElement.classList.remove('hero-gl');
     console.warn('WebGL nicht verfügbar:', err);
     document.documentElement.classList.add('no-webgl');
   }
+  updateHeroTheme();
+  // Fotos erst vermessen, wenn sie geladen sind
+  photoGlasses.addEventListener('load', () => { if (heroState.gl) resizeHero(); });
 
   if (webgl) {
-    Promise.all([heroScene.userData.envPromise, cScene.userData.envPromise]).finally(() => {
+    Promise.resolve().finally(() => {
       let last = performance.now();
       const loop = (now) => {
         const dt = Math.min(0.05, (now - last) / 1000);
         last = now;
-        if (heroState.visible) renderHero();
+        if (heroState.gl && heroState.visible && heroState.canvasOn) renderHero();
         if (config.visible) renderConfig(dt);
         requestAnimationFrame(loop);
       };
       requestAnimationFrame(loop);
-      renderHero();
+      if (heroState.gl) renderHero();
       renderThumbnails().catch((e) => console.warn('Thumbnails:', e));
     });
   }

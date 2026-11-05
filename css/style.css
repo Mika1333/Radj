@@ -271,7 +271,7 @@ button { font: inherit; color: inherit; }
 }
 
 /* ---------- Hero ---------- */
-.hero { position: relative; height: 220vh; }
+.hero { position: relative; height: 270vh; }
 .hero__sticky {
   position: sticky;
   top: 0;
@@ -279,46 +279,36 @@ button { font: inherit; color: inherit; }
   height: 100svh;
   overflow: hidden;
   background-color: var(--forest);
-  background:
-    radial-gradient(70% 60% at 50% 78%, var(--hero-glow) 0%, transparent 70%),
-    var(--hero-bg);
+  background: var(--hero-bg);
 }
-.hero__intro .eyebrow { color: var(--sage-light); }
-.hero__intro .link-arrow { color: var(--beige); }
-.hero__canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
-.hero__intro {
-  position: relative;
-  z-index: 2;
-  display: grid;
-  justify-items: center;
-  gap: 0;
-  padding: calc(var(--nav-h) + 6vh) var(--gutter-r) 0 var(--gutter-l);
-  text-align: center;
-  will-change: transform, opacity;
+.hero__canvas { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; display: block; touch-action: pan-y; opacity: 0; pointer-events: none; }
+/* Porträt als erstes Bild: Brille im Foto, darunter dieselbe Aufnahme ohne Brille */
+.hero__photo {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  height: 100%;
+  aspect-ratio: 1307 / 1203;
+  transform: translateX(-51.95%);
 }
-.hero__title {
-  margin: 0;
-  font-family: var(--f-display);
-  font-weight: 600;
-  font-size: var(--step-4);
-  line-height: 0.98;
-  letter-spacing: -0.045em;
-  text-wrap: balance;
-  background: linear-gradient(180deg, var(--beige) 30%, #b7cbb2 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.hero__photo img { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; }
+#photoBare { opacity: 0; transform-origin: 51.95% 47.4%; will-change: transform, opacity; }
+.hero-gl #photoBare { opacity: 1; }
+@media (max-aspect-ratio: 1/1) {
+  .hero__photo { height: auto; width: 205vw; top: calc(44% - 205vw * 0.4363); }
 }
-.hero__sub {
-  max-width: 30em;
-  margin: 22px 0 0;
-  font-size: var(--step-1);
-  line-height: 1.4;
-  color: var(--cream-soft);
-  letter-spacing: -0.01em;
-  text-wrap: balance;
+.hero__logo {
+  position: absolute;
+  top: calc(26px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  z-index: 3;
+  padding: 6px;
+  transform: translateX(-50%);
 }
-.hero__cta { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 24px; margin-top: 28px; }
+.hero__logo .logo { width: 128px; background: var(--beige); }
+/* Während des Porträts nur das Logo: Navigation ausgeblendet */
+.nav { transition: transform 0.6s var(--ease), opacity 0.4s; }
+.hero-top .nav { transform: translateY(calc(-100% - env(safe-area-inset-top, 0px))); opacity: 0; pointer-events: none; }
 
 .hero__callouts { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
 .callout {
@@ -327,17 +317,16 @@ button { font: inherit; color: inherit; }
   gap: 4px;
   max-width: 240px;
   padding-left: 14px;
-  border-left: 1px solid var(--sage);
+  border-left: 1px solid var(--sage-light);
   opacity: 0;
 }
-.callout__k { font-family: var(--f-label); font-size: 0.625rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--sage); }
-.callout__v { font-size: 1.125rem; font-weight: 500; line-height: 1.3; letter-spacing: -0.015em; }
+.callout__k { font-family: var(--f-label); font-size: 0.625rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--sage-light); }
+.callout__v { font-size: 1.125rem; font-weight: 500; line-height: 1.3; letter-spacing: -0.015em; color: var(--beige); }
 .callout--a { left: max(6vw, var(--gutter-l)); top: 22%; }
 .callout--b { right: max(6vw, var(--gutter-r)); top: 30%; }
 .callout--c { left: max(10vw, var(--gutter-l)); bottom: 16%; }
 
 
-.no-webgl .hero__canvas { background: url("../assets/panto-no01-studio.jpg") center 70% / min(900px, 90%) auto no-repeat; mix-blend-mode: multiply; }
 
 /* ---------- Statement ---------- */
 .statement { padding-block: clamp(120px, 18vh, 220px); }
@@ -711,7 +700,7 @@ button { font: inherit; color: inherit; }
   .nav__menu { display: block; }
   .cart-btn__label { display: none; }
   .cart-btn { padding: 0 6px 0 10px; }
-  .hero { height: 200vh; }
+  .hero { height: 250vh; }
   .callout { max-width: 180px; }
   .callout__v { font-size: 0.9375rem; }
   .callout--a { top: auto; bottom: 30%; }
