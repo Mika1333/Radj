@@ -255,7 +255,7 @@ button { font: inherit; color: inherit; }
 }
 
 /* ---------- Hero ---------- */
-.hero { position: relative; height: 340vh; }
+.hero { position: relative; height: 220vh; }
 .hero__sticky {
   position: sticky;
   top: 0;
@@ -664,7 +664,7 @@ button { font: inherit; color: inherit; }
   .nav__menu { display: block; }
   .cart-btn__label { display: none; }
   .cart-btn { padding: 0 6px 0 10px; }
-  .hero { height: 300vh; }
+  .hero { height: 200vh; }
   .callout { max-width: 180px; }
   .callout__v { font-size: 0.9375rem; }
   .callout--a { top: auto; bottom: 30%; }
