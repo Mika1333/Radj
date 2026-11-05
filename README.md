@@ -11,7 +11,7 @@ Produktseite für die Brillenmarke **Luxlens** mit der Fassung *Panto No. 01*.
 
 ## Lokal starten
 
-Die Seite ist rein statisch. Wegen der ES-Module braucht sie einen lokalen Server:
+Die Seite ist rein statisch. `index.html` lässt sich direkt per Doppelklick öffnen (Internetverbindung für three.js, GSAP und Lenis nötig). Alternativ mit lokalem Server:
 
 ```bash
 python3 -m http.server 8000
