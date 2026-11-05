@@ -140,9 +140,9 @@ const textureCache = new Map();
 function acetateTexture(finish, renderer) {
   const key = finish + (renderer ? renderer.id || '' : '');
   if (textureCache.has(key)) return textureCache.get(key);
-  const tex = new THREE.CanvasTexture(makeAcetateCanvas(finish));
+  const tex = new THREE.CanvasTexture(makeAcetateCanvas(finish, 2048));
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(0.26, 0.26);
+  tex.repeat.set(0.3, 0.3);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = renderer ? renderer.capabilities.getMaxAnisotropy() : 4;
   textureCache.set(key, tex);
@@ -153,12 +153,12 @@ function acetateTexture(finish, renderer) {
 // Runde Panto-Form wie auf dem Produktfoto
 const R_A = 1.0;          // halbe Glasbreite (≈ 24 mm)
 const R_B = 0.93;         // halbe Glashöhe
-const RIM = 0.145;        // Randstärke
+const RIM = 0.095;        // Randstärke (plus Fase: ≈ 3,9 mm sichtbar)
 const CX = 1.17;          // Glasmittelpunkt-Abstand zur Mitte
-const DEPTH = 0.2;        // Acetatstärke der Front
+const DEPTH = 0.14;       // Acetatstärke der Front (≈ 5 mm inkl. Fase)
 const BEND = 0.05;        // Frontbiegung (Wrap)
-const BEVEL_S = 0.05;     // Fasenbreite
-const BEVEL_T = 0.055;    // Fasentiefe
+const BEVEL_S = 0.035;    // Fasenbreite
+const BEVEL_T = 0.04;     // Fasentiefe
 
 // Panto-Kontur: rund mit leicht abgeflachter Oberkante
 function rimPoint(theta, a, b) {
@@ -171,7 +171,7 @@ function rimPoint(theta, a, b) {
 // Ausformung für die Backen (Endstücke) an der Außenseite oben
 function wingBump(thetaLocal) {
   const d = (thetaLocal - 157) / 22;
-  return Math.abs(d) < 1 ? 0.13 * 0.5 * (1 + Math.cos(Math.PI * d)) : 0;
+  return Math.abs(d) < 1 ? 0.1 * 0.5 * (1 + Math.cos(Math.PI * d)) : 0;
 }
 
 function buildFrontShape() {
@@ -188,9 +188,9 @@ function buildFrontShape() {
   shape.moveTo(pts[0][0], pts[0][1]);
   for (let i = 1; i < pts.length; i++) shape.lineTo(pts[i][0], pts[i][1]);
   // Schlüsselloch-Steg: Bogen nach oben bis Scheitel
-  const apexY = 0.36;
-  shape.bezierCurveTo(L[0] + 0.12, L[1] + 0.32, -0.2, apexY, 0, apexY);
-  shape.bezierCurveTo(0.2, apexY, -L[0] - 0.12, L[1] + 0.32, -L[0], L[1]);
+  const apexY = 0.42;
+  shape.bezierCurveTo(L[0] + 0.2, L[1] + 0.32, -0.19, apexY, 0, apexY);
+  shape.bezierCurveTo(0.19, apexY, -L[0] - 0.2, L[1] + 0.32, -L[0], L[1]);
   // Rechtes Glas: von unten-innen (215°) über außen bis oben-innen (130°+360°)
   for (let t = 215; t <= 490; t += 2) {
     const mirrored = 180 - (t % 360);
@@ -200,7 +200,7 @@ function buildFrontShape() {
   }
   // Oberkante des Stegs
   const P0 = pts[0];
-  shape.quadraticCurveTo(0, P0[1] - 0.1, P0[0], P0[1]);
+  shape.quadraticCurveTo(0, P0[1] - 0.07, P0[0], P0[1]);
 
   for (const side of [-1, 1]) {
     const hole = new THREE.Path();
@@ -240,7 +240,7 @@ function buildLensGeometry(side) {
   const s = new THREE.Shape();
   const deg = Math.PI / 180;
   for (let t = 0; t <= 360; t += 2) {
-    const [x, y] = rimPoint(t * deg, R_A - RIM + 0.035, R_B - RIM + 0.035);
+    const [x, y] = rimPoint(t * deg, R_A - RIM + 0.025, R_B - RIM + 0.025);
     if (t === 0) s.moveTo(x, y);
     else s.lineTo(x, y);
   }
@@ -261,23 +261,23 @@ function buildTempleGeometry() {
   // Seitenprofil des Bügels (x = Länge nach hinten, y = Höhe)
   const L = 5.3;
   const s = new THREE.Shape();
-  s.moveTo(0, 0.19);
-  s.bezierCurveTo(1.2, 0.2, 3.0, 0.12, L, 0.07);
+  s.moveTo(0, 0.13);
+  s.bezierCurveTo(1.2, 0.13, 3.0, 0.08, L, 0.05);
   // Ohrbiegung nach unten
-  s.bezierCurveTo(L + 0.55, 0.04, L + 0.95, -0.25, L + 1.15, -0.78);
-  s.bezierCurveTo(L + 1.19, -0.9, L + 1.06, -0.93, L + 1.01, -0.82);
-  s.bezierCurveTo(L + 0.82, -0.32, L + 0.5, -0.07, L, -0.05);
-  s.bezierCurveTo(3.0, -0.03, 1.2, -0.11, 0, -0.17);
-  s.lineTo(0, 0.19);
+  s.bezierCurveTo(L + 0.55, 0.03, L + 0.95, -0.25, L + 1.13, -0.76);
+  s.bezierCurveTo(L + 1.16, -0.85, L + 1.07, -0.88, L + 1.03, -0.8);
+  s.bezierCurveTo(L + 0.85, -0.31, L + 0.5, -0.05, L, -0.035);
+  s.bezierCurveTo(3.0, -0.03, 1.2, -0.1, 0, -0.12);
+  s.lineTo(0, 0.13);
   const geo = new THREE.ExtrudeGeometry(s, {
-    depth: 0.1,
+    depth: 0.065,
     bevelEnabled: true,
-    bevelThickness: 0.03,
-    bevelSize: 0.03,
-    bevelSegments: 5,
-    curveSegments: 64,
+    bevelThickness: 0.022,
+    bevelSize: 0.02,
+    bevelSegments: 6,
+    curveSegments: 72,
   });
-  geo.translate(0, 0, -0.05);
+  geo.translate(0, 0, -0.0325);
   geo.rotateY(Math.PI / 2); // Länge zeigt nach -z
   return geo;
 }
@@ -285,7 +285,7 @@ function buildTempleGeometry() {
 function buildRivetGeometry() {
   // Silberne Zierniete in Pfeilform (wie auf dem Produktfoto)
   const s = new THREE.Shape();
-  const w = 0.13, h = 0.045, n = 0.022;
+  const w = 0.11, h = 0.038, n = 0.018;
   s.moveTo(-w, 0);
   s.lineTo(-w * 0.55, h);
   s.lineTo(-w * 0.2, n);
@@ -353,9 +353,9 @@ export function createMaterials(finish, renderer) {
     roughness: 0.2,
     metalness: 0,
     ior: 1.49,
-    thickness: 0.35,              // Lichtweg durch das Acetat
+    thickness: 0.25,              // Lichtweg durch das Acetat
     attenuationColor: new THREE.Color('#c8701f'),
-    attenuationDistance: 0.28,    // färbt durchgehendes Licht bernsteinfarben
+    attenuationDistance: 0.22,    // färbt durchgehendes Licht bernsteinfarben
     specularIntensity: 0.8,
     clearcoat: 1,
     clearcoatRoughness: 0.025,
@@ -368,11 +368,11 @@ export function createMaterials(finish, renderer) {
     metalness: 0,
     roughness: 0.0,
     transparent: true,
-    opacity: 0.07,
+    opacity: 0.05,
     ior: 1.6,
     clearcoat: 1,
     clearcoatRoughness: 0,
-    envMapIntensity: 1.5,
+    envMapIntensity: 1.1,
     side: THREE.DoubleSide,
     depthWrite: false,
   });
@@ -391,7 +391,12 @@ export function createMaterials(finish, renderer) {
     roughness: 0.14,
     envMapIntensity: 1.5,
   });
-  return { acetate, lens, pad, metal };
+  const wire = new THREE.MeshStandardMaterial({
+    color: 0xb9b2a8,
+    metalness: 1,
+    roughness: 0.35,
+  });
+  return { acetate, lens, pad, metal, wire };
 }
 
 export function setFinish(model, finish, renderer) {
@@ -430,7 +435,7 @@ export function createGlasses(finish = 'havana', renderer) {
     // Transparente Nasenpads hinter dem Steg
     const pad = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), mats.pad);
     const px = side * (CX - R_A + RIM + 0.0);
-    pad.scale.set(0.06, 0.17, 0.035);
+    pad.scale.set(0.05, 0.15, 0.03);
     pad.position.set(px, -0.32, -DEPTH / 2 - BEVEL_T - 0.05 - BEND * px * px);
     pad.rotation.set(0.25, side * 0.6, side * 0.35);
     pad.renderOrder = 3;
@@ -445,34 +450,40 @@ export function createGlasses(finish = 'havana', renderer) {
 
   const templeGeo = buildTempleGeometry();
   const rivetGeo = buildRivetGeometry();
-  const hingeGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.3, 20);
+  const hingeGeo = new THREE.CylinderGeometry(0.028, 0.028, 0.22, 20);
+  // Kerndraht: Metallseele im Bügel, durch das Acetat sichtbar
+  const wireGeo = new THREE.CylinderGeometry(0.011, 0.011, 4.3, 10);
+  wireGeo.rotateX(Math.PI / 2);
+  wireGeo.translate(0, 0.008, -2.45);
   for (const side of [-1, 1]) {
     // Bügel mit Scharnier-Pivot, leicht geöffnet
     const pivot = new THREE.Group();
-    pivot.position.set(side * (maxX - 0.1), hingeY, backZ + 0.02);
+    pivot.position.set(side * (maxX - 0.08), hingeY, backZ + 0.015);
     pivot.rotation.y = side * 0.07;
     const temple = new THREE.Mesh(templeGeo, mats.acetate);
     temple.castShadow = true;
     temple.receiveShadow = true;
     pivot.add(temple);
+    const wire = new THREE.Mesh(wireGeo, mats.wire);
+    pivot.add(wire);
 
     // Niete außen am Bügel
     const tr = new THREE.Mesh(rivetGeo, mats.metal);
     tr.rotation.y = side * Math.PI / 2;
-    tr.position.set(side * 0.084, 0.01, -0.62);
+    tr.position.set(side * 0.057, 0.008, -0.55);
     pivot.add(tr);
     group.add(pivot);
 
     // Niete vorne auf den Backen
     const fr = new THREE.Mesh(rivetGeo, mats.metal);
-    const fx = side * (maxX - 0.19);
+    const fx = side * (maxX - 0.16);
     fr.position.set(fx, hingeY + 0.02, DEPTH / 2 + BEVEL_T - BEND * fx * fx - 0.006);
     fr.rotation.y = -side * Math.atan(2 * BEND * Math.abs(fx));
     group.add(fr);
 
     // Scharnier aus Metall zwischen Front und Bügel
     const hinge = new THREE.Mesh(hingeGeo, mats.metal);
-    hinge.position.set(side * (maxX - 0.16), hingeY, backZ - 0.03);
+    hinge.position.set(side * (maxX - 0.12), hingeY, backZ - 0.025);
     group.add(hinge);
   }
 

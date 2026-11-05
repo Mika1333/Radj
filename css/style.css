@@ -1,6 +1,9 @@
 /* Luxlens — Layout: Apple-artige Produktseite. Helle Beige-Flächen wechseln mit
    Forest-Green-Bändern, zentrierte Großtypografie, ein Neon-Akzent nur für Kaufen. */
 :root {
+  /* Hero-Übergang: --t 0 = Dunkelgrün, 1 = Beige (per Scroll gesetzt), --tf schaltet die Navigationsschrift um */
+  --t: 0;
+  --tf: 0;
   --forest: #16271d;     /* tiefes Forest Green, dunkle Bänder */
   --moss: #22392b;       /* Kacheln auf Forest Green */
   --sage: #5e7d62;       /* gedämpfter Text, Labels, Linien */
@@ -30,6 +33,11 @@
   --nav-h: 52px;
   --radius: 28px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --hero-bg: color-mix(in oklab, var(--forest), var(--beige) calc(var(--t) * 100%));
+  --hero-glow: color-mix(in oklab, #2d4c39, #eadfd1 calc(var(--t) * 100%));
+  --nav-fg: color-mix(in oklab, var(--beige), var(--ink) calc(var(--tf) * 100%));
+  --nav-bg: color-mix(in oklab, rgba(22, 39, 29, 0.72), rgba(245, 239, 231, 0.72) calc(var(--t) * 100%));
+  --nav-line: color-mix(in oklab, rgba(245, 239, 231, 0.08), rgba(20, 36, 26, 0.06) calc(var(--t) * 100%));
   color-scheme: light;
 }
 
@@ -55,7 +63,8 @@ body::before {
   inset: 0 0 auto;
   height: env(safe-area-inset-top, 0px);
   z-index: 60;
-  background: var(--beige);
+  background: var(--forest);
+  background: var(--hero-bg);
 }
 img { max-width: 100%; display: block; }
 a { color: inherit; }
@@ -157,12 +166,15 @@ button { font: inherit; color: inherit; }
   left: 0;
   right: 0;
   z-index: 50;
-  background: rgba(245, 239, 231, 0.72);
+  color: var(--beige);
+  color: var(--nav-fg);
+  background: rgba(22, 39, 29, 0.72);
+  background: var(--nav-bg);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid rgba(20, 36, 26, 0.06);
-  transition: background-color 0.4s, border-color 0.4s;
+  border-bottom: 1px solid var(--nav-line);
 }
+.nav .logo { background: currentColor; }
 .nav__inner {
   display: flex;
   align-items: center;
@@ -179,7 +191,7 @@ button { font: inherit; color: inherit; }
 .nav__links a {
   font-size: 0.8125rem;
   text-decoration: none;
-  color: var(--ink);
+  color: inherit;
   opacity: 0.8;
   transition: opacity 0.2s;
 }
@@ -235,7 +247,7 @@ button { font: inherit; color: inherit; }
   left: 9px;
   right: 9px;
   height: 1.5px;
-  background: var(--ink);
+  background: currentColor;
   transition: transform 0.35s var(--ease);
 }
 .nav__menu span:first-child { top: 13px; }
@@ -252,7 +264,8 @@ button { font: inherit; color: inherit; }
   font-weight: 600;
   letter-spacing: -0.02em;
   text-decoration: none;
-  border-bottom: 1px solid rgba(20, 36, 26, 0.08);
+  color: inherit;
+  border-bottom: 1px solid var(--nav-line);
 }
 
 /* ---------- Hero ---------- */
@@ -263,10 +276,13 @@ button { font: inherit; color: inherit; }
   height: 100vh;
   height: 100svh;
   overflow: hidden;
+  background-color: var(--forest);
   background:
-    radial-gradient(120% 70% at 50% 95%, #eadfd1 0%, rgba(234, 223, 209, 0) 60%),
-    var(--beige);
+    radial-gradient(70% 60% at 50% 78%, var(--hero-glow) 0%, transparent 70%),
+    var(--hero-bg);
 }
+.hero__intro .eyebrow { color: var(--sage-light); }
+.hero__intro .link-arrow { color: var(--beige); }
 .hero__canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
 .hero__intro {
   position: relative;
@@ -286,7 +302,7 @@ button { font: inherit; color: inherit; }
   line-height: 0.98;
   letter-spacing: -0.045em;
   text-wrap: balance;
-  background: linear-gradient(180deg, var(--ink) 30%, #2f5a3f 100%);
+  background: linear-gradient(180deg, var(--beige) 30%, #b7cbb2 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -296,7 +312,7 @@ button { font: inherit; color: inherit; }
   margin: 22px 0 0;
   font-size: var(--step-1);
   line-height: 1.4;
-  color: var(--ink-soft);
+  color: var(--cream-soft);
   letter-spacing: -0.01em;
   text-wrap: balance;
 }

@@ -141,6 +141,27 @@ function resizeHero() {
   heroViewH = 2 * dist * tan;
 }
 
+/* Farbübergang: Hero startet in Dunkelgrün und wird beim Scrollen beige */
+const rootStyle = document.documentElement.style;
+let lastT = -1, lastTf = -1;
+function updateHeroTheme() {
+  let t, tf;
+  if (reduceMotion) {
+    const past = hero.getBoundingClientRect().bottom <= 60;
+    t = tf = past ? 1 : 0;
+  } else {
+    const p = heroProgress();
+    t = smooth(0.08, 0.45, p);
+    tf = smooth(0.2, 0.3, p);
+  }
+  t = Math.round(t * 1000) / 1000;
+  tf = Math.round(tf * 1000) / 1000;
+  if (t !== lastT) { rootStyle.setProperty('--t', t); lastT = t; }
+  if (tf !== lastTf) { rootStyle.setProperty('--tf', tf); lastTf = tf; }
+}
+window.addEventListener('scroll', updateHeroTheme, { passive: true });
+window.addEventListener('resize', updateHeroTheme);
+
 function heroProgress() {
   const r = hero.getBoundingClientRect();
   const total = r.height - window.innerHeight;
@@ -432,12 +453,13 @@ function initScrollFx() {
     scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom bottom', scrub: 0.6 },
     defaults: { ease: 'none' },
   });
-  tl.to('#heroIntro', { opacity: 0, y: -90, scale: 0.96, duration: 0.2 }, 0)
-    .fromTo('#calloutA', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.08 }, 0.3)
-    .to('#calloutA', { opacity: 0, y: -30, duration: 0.08 }, 0.5)
-    .fromTo('#calloutB', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.08 }, 0.5)
-    .to('#calloutB', { opacity: 0, y: -30, duration: 0.08 }, 0.7)
-    .fromTo('#calloutC', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.08 }, 0.7)
+  // Hinweise erscheinen erst, wenn der Hintergrund schon beige ist
+  tl.to('#heroIntro', { opacity: 0, y: -90, scale: 0.96, duration: 0.16 }, 0)
+    .fromTo('#calloutA', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.07 }, 0.44)
+    .to('#calloutA', { opacity: 0, y: -30, duration: 0.07 }, 0.6)
+    .fromTo('#calloutB', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.07 }, 0.6)
+    .to('#calloutB', { opacity: 0, y: -30, duration: 0.07 }, 0.76)
+    .fromTo('#calloutC', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.07 }, 0.76)
     .to('#calloutC', { opacity: 0, y: -30, duration: 0.06 }, 0.94);
 
   // Statement: Wort für Wort aufhellen
@@ -507,6 +529,7 @@ function initScrollFx() {
 /* =========================================================
    START
    ========================================================= */
+updateHeroTheme();
 buildSwatches();
 buildCards();
 renderCart();
