@@ -487,12 +487,12 @@ export function createGlasses(finish = 'havana', renderer) {
 /* ---------- Studio-Umgebung für Reflexionen ---------- */
 
 function buildStudioEnvironment() {
-  // Dunkel-warmer Raum mit Softboxen: erzeugt lange, weiche Glanzlichter
+  // Dunkelgrüner Raum mit Softboxen: erzeugt lange, weiche Glanzlichter
   // auf dem lackierten Acetat, wie bei Produktfotos
   const env = new THREE.Scene();
   const room = new THREE.Mesh(
     new THREE.SphereGeometry(20, 32, 16),
-    new THREE.MeshBasicMaterial({ color: new THREE.Color('#3d3129'), side: THREE.BackSide })
+    new THREE.MeshBasicMaterial({ color: new THREE.Color('#2c3a30'), side: THREE.BackSide })
   );
   env.add(room);
   const floor = new THREE.Mesh(
@@ -542,12 +542,12 @@ export function createStage(renderer, { shadow = true } = {}) {
   const rim = new THREE.DirectionalLight(0xffd2a8, 1.4);
   rim.position.set(6, 3, -6);
   scene.add(rim);
-  scene.add(new THREE.HemisphereLight(0xfff6ec, 0x6b4a33, 0.6));
+  scene.add(new THREE.HemisphereLight(0xfff6ec, 0x3f5a45, 0.6));
 
   if (shadow) {
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(30, 30),
-      new THREE.ShadowMaterial({ color: 0x3a2414, opacity: 0.22 })
+      new THREE.ShadowMaterial({ color: 0x1c3324, opacity: 0.22 })
     );
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -1.55;

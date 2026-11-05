@@ -21,7 +21,7 @@ python3 -m http.server 8000
 
 ```
 index.html          Markup aller Abschnitte
-css/style.css       Design-Tokens (Braun, Beige, Neon-Orange) und Layout
+css/style.css       Design-Tokens (Forest Green, Beige, Neon-Orange) und Layout
 js/glasses.js       3D-Modell, Acetat-Texturen, Licht und Bühne
 js/main.js          Scroll-Choreografie, Konfigurator, Kollektion, Warenkorb
 assets/             Logo (freigestellt) und Produktfoto
