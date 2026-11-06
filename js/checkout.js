@@ -4,7 +4,6 @@
   'use strict';
   const { $, $$, euro, euro2, escapeHTML, PRODUCT, FINISH_META, SHIPPING, getCart, itemPrice, cartTotal, itemDetails, cartImage, clearCart, initShop, } = window.LXShop;
 
-  initShop();
 
   const PAYMENTS = {
     card: { label: 'Kredit- oder Debitkarte', note: 'Visa, Mastercard, American Express' },
@@ -149,5 +148,18 @@
   }
 
   renderSummary();
+  window.LXCheckout = {
+    onShow() {
+      // Nach einer Bestellung beim nächsten Öffnen wieder mit leerem Formular starten
+      if (!$('#doneState').hidden) {
+        $('#doneState').hidden = true;
+        const btn = $('#placeOrder');
+        btn.disabled = false;
+        btn.innerHTML = 'Zahlungspflichtig bestellen · <span id="payTotal">0 €</span>';
+        $('#terms').checked = false;
+      }
+      renderSummary();
+    },
+  };
   window.addEventListener('storage', (e) => { if (e.key === 'luxlens-cart' && $('#doneState').hidden) renderSummary(); });
 })();

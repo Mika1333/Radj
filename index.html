@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de" class="hero-top">
+<html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -10,6 +10,17 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Michroma&display=swap">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/pages.css">
+<script>
+  // Ansicht vor dem ersten Bild festlegen: Startseite, Konfigurator (#farbe …) oder Kasse (#kasse)
+  (function () {
+    var h = location.hash.slice(1);
+    var steps = ['farbe', 'groesse', 'glaeser', 'sehstaerke', 'gravur', 'uebersicht'];
+    var v = steps.indexOf(h) > -1 ? 'config' : h === 'kasse' ? 'checkout' : 'main';
+    document.documentElement.setAttribute('data-route', v);
+    if (v === 'main') document.documentElement.classList.add('hero-top');
+  })();
+</script>
 </head>
 <body>
 
@@ -20,7 +31,7 @@
     <nav class="nav__links" aria-label="Hauptnavigation">
       <a href="#handwerk">Handwerk</a>
       <a href="#details">Details</a>
-      <a href="konfigurator.html">Konfigurator</a>
+      <a href="#farbe">Konfigurator</a>
       <a href="#kollektion">Kollektion</a>
     </nav>
     <div class="nav__actions">
@@ -37,12 +48,12 @@
   <div class="mobile-menu" id="mobileMenu" hidden>
     <a href="#handwerk">Handwerk</a>
     <a href="#details">Details</a>
-    <a href="konfigurator.html">Konfigurator</a>
+    <a href="#farbe">Konfigurator</a>
     <a href="#kollektion">Kollektion</a>
   </div>
 </header>
 
-<main id="top">
+<main id="top" class="view view--main">
 
 <!-- ============ Hero mit 3D-Modell ============ -->
 <section class="hero" id="hero">
@@ -200,7 +211,7 @@
       <div class="config__buy">
         <p class="price"><span>ab 289 €</span><small>inkl. MwSt. · kostenloser Versand</small></p>
         <div class="config__actions">
-          <a class="btn btn--neon btn--lg" id="openConfigurator" href="konfigurator.html">Jetzt konfigurieren</a>
+          <a class="btn btn--neon btn--lg" id="openConfigurator" href="#farbe">Jetzt konfigurieren</a>
           <button class="link-btn" type="button" id="quickAdd">Nur Fassung, Größe M in den Warenkorb</button>
         </div>
       </div>
@@ -231,6 +242,252 @@
 
 </main>
 
+<section class="cfg view view--config" id="konfigurator-seite" aria-label="Konfigurator">
+  <!-- Fortschritt: jeder Schritt ist eine eigene Seite mit eigener Adresse (#farbe, #groesse …) -->
+  <nav class="cfg-progress" aria-label="Schritte">
+    <ol class="cfg-progress__list" id="progress">
+      <li><a href="#farbe" data-step-link="farbe"><i>1</i><span>Farbe</span></a></li>
+      <li><a href="#groesse" data-step-link="groesse"><i>2</i><span>Größe</span></a></li>
+      <li><a href="#glaeser" data-step-link="glaeser"><i>3</i><span>Gläser</span></a></li>
+      <li><a href="#sehstaerke" data-step-link="sehstaerke"><i>4</i><span>Sehstärke</span></a></li>
+      <li><a href="#gravur" data-step-link="gravur"><i>5</i><span>Gravur</span></a></li>
+      <li><a href="#uebersicht" data-step-link="uebersicht"><i>6</i><span>Übersicht</span></a></li>
+    </ol>
+    <div class="cfg-progress__bar"><span id="progressBar"></span></div>
+  </nav>
+
+  <div class="cfg__grid">
+    <!-- 3D-Bühne -->
+    <div class="cfg-stage">
+      <div class="cfg-stage__box">
+        <canvas id="cfgCanvas" aria-label="3D-Vorschau deiner Konfiguration"></canvas>
+        <p class="cfg-stage__hint">Ziehen zum Drehen</p>
+        <div class="cfg-stage__views" role="group" aria-label="Ansicht">
+          <button type="button" data-stage-view="front">Vorne</button>
+          <button type="button" data-stage-view="three" aria-pressed="true">Schräg</button>
+          <button type="button" data-stage-view="side">Seite</button>
+        </div>
+      </div>
+      <div class="cfg-stage__summary">
+        <div>
+          <p class="cfg-stage__name">Panto No. 01 · <span id="sumFinish">Havana</span></p>
+          <p class="cfg-stage__meta" id="sumMeta">Größe M · Nur Fassung</p>
+        </div>
+        <p class="cfg-stage__price" id="sumPrice">289 €</p>
+      </div>
+    </div>
+
+    <!-- Schritt-Seiten -->
+    <div class="cfg-steps" id="steps">
+
+      <section class="cfg-step" id="step-farbe" data-step="farbe" aria-labelledby="h-farbe">
+        <p class="eyebrow">Schritt 1 von 6</p>
+        <h1 class="cfg-step__title" id="h-farbe">Welches Acetat passt zu dir?</h1>
+        <p class="cfg-step__lead">Jede Platte ist ein Unikat. Das Muster deiner Brille weicht leicht von der Vorschau ab.</p>
+        <div class="cfg-options cfg-options--finish" id="finishOptions" role="radiogroup" aria-labelledby="h-farbe"></div>
+        <div class="cfg-step__nav">
+          <a class="link-arrow link-arrow--back" href="#top">Zur Startseite</a>
+          <a class="btn btn--dark" href="#groesse">Weiter: Größe</a>
+        </div>
+      </section>
+
+      <section class="cfg-step" id="step-groesse" data-step="groesse" aria-labelledby="h-groesse" hidden>
+        <p class="eyebrow">Schritt 2 von 6</p>
+        <h1 class="cfg-step__title" id="h-groesse">Wähle deine Größe.</h1>
+        <p class="cfg-step__lead">Die Maße stehen bei jeder Brille innen am Bügel: Glasbreite, Stegbreite und Bügellänge in Millimetern.</p>
+        <div class="cfg-options" id="sizeOptions" role="radiogroup" aria-labelledby="h-groesse"></div>
+        <details class="cfg-help">
+          <summary>So findest du deine Größe</summary>
+          <p>Lege eine Brille, die dir gut passt, auf den Tisch und lies die drei Zahlen auf der Innenseite des Bügels ab. Liegt die erste Zahl zwischen 46 und 48, passt Größe M. Bist du unsicher, nimm M: Wir passen die Bügel im Atelier kostenlos an.</p>
+        </details>
+        <div class="cfg-step__nav">
+          <a class="link-arrow link-arrow--back" href="#farbe">Farbe</a>
+          <a class="btn btn--dark" href="#glaeser">Weiter: Gläser</a>
+        </div>
+      </section>
+
+      <section class="cfg-step" id="step-glaeser" data-step="glaeser" aria-labelledby="h-glaeser" hidden>
+        <p class="eyebrow">Schritt 3 von 6</p>
+        <h1 class="cfg-step__title" id="h-glaeser">Welche Gläser brauchst du?</h1>
+        <p class="cfg-step__lead">Alle Gläser sind superentspiegelt, gehärtet und filtern 100 % UV-Strahlung.</p>
+        <div class="cfg-options" id="lensOptions" role="radiogroup" aria-labelledby="h-glaeser"></div>
+        <div class="cfg-step__nav">
+          <a class="link-arrow link-arrow--back" href="#groesse">Größe</a>
+          <a class="btn btn--dark" href="#sehstaerke">Weiter: Sehstärke</a>
+        </div>
+      </section>
+
+      <section class="cfg-step" id="step-sehstaerke" data-step="sehstaerke" aria-labelledby="h-sehstaerke" hidden>
+        <p class="eyebrow">Schritt 4 von 6</p>
+        <h1 class="cfg-step__title" id="h-sehstaerke">Deine Sehstärke.</h1>
+        <div id="rxNone" class="cfg-note" hidden>
+          <p><strong id="rxNoneLens">Nur Fassung</strong> braucht keine Werte. Du kannst diesen Schritt überspringen.</p>
+        </div>
+        <div id="rxNeeded">
+          <p class="cfg-step__lead">Unser Optikermeister prüft jede Bestellung, bevor die Gläser geschliffen werden.</p>
+          <div class="cfg-options cfg-options--compact" id="rxModes" role="radiogroup" aria-labelledby="h-sehstaerke"></div>
+          <form class="rx" id="rxForm" hidden novalidate>
+            <div class="rx__table" role="group" aria-label="Werte aus deinem Brillenpass">
+              <span></span><span class="rx__head">SPH</span><span class="rx__head">CYL</span><span class="rx__head">Achse</span>
+              <span class="rx__eye">Rechts <small>OD</small></span>
+              <select id="rx-od-sph" aria-label="Rechts Sphäre"></select>
+              <select id="rx-od-cyl" aria-label="Rechts Zylinder"></select>
+              <input id="rx-od-axis" type="number" inputmode="numeric" min="0" max="180" step="1" placeholder="–" aria-label="Rechts Achse in Grad">
+              <span class="rx__eye">Links <small>OS</small></span>
+              <select id="rx-os-sph" aria-label="Links Sphäre"></select>
+              <select id="rx-os-cyl" aria-label="Links Zylinder"></select>
+              <input id="rx-os-axis" type="number" inputmode="numeric" min="0" max="180" step="1" placeholder="–" aria-label="Links Achse in Grad">
+            </div>
+            <label class="rx__pd" for="rx-pd">Pupillendistanz (PD) <select id="rx-pd"></select></label>
+            <p class="rx__error" id="rxError" role="alert" hidden></p>
+            <p class="rx__hint">Die Werte findest du in deinem Brillenpass. Bei Zylinder ungleich 0 brauchen wir auch die Achse (0 bis 180°).</p>
+          </form>
+        </div>
+        <div class="cfg-step__nav">
+          <a class="link-arrow link-arrow--back" href="#glaeser">Gläser</a>
+          <a class="btn btn--dark" href="#gravur" id="rxNext">Weiter: Gravur</a>
+        </div>
+      </section>
+
+      <section class="cfg-step" id="step-gravur" data-step="gravur" aria-labelledby="h-gravur" hidden>
+        <p class="eyebrow">Schritt 5 von 6</p>
+        <h1 class="cfg-step__title" id="h-gravur">Eine persönliche Gravur.</h1>
+        <p class="cfg-step__lead">Wir lasern bis zu 20 Zeichen auf die Innenseite des linken Bügels. Kostenlos und optional.</p>
+        <div class="engrave">
+          <div class="engrave__temple" id="templePreview" aria-hidden="true">
+            <span class="engrave__size" id="templeSize">47 □ 21 145</span>
+            <span class="engrave__text" id="engraveText">Dein Text</span>
+          </div>
+          <label class="engrave__label" for="engraveInput">Text für die Gravur</label>
+          <div class="engrave__field">
+            <input id="engraveInput" type="text" maxlength="20" autocomplete="off" placeholder="z. B. Für M. · 2026">
+            <span id="engraveCount" aria-live="polite">0 / 20</span>
+          </div>
+          <p class="rx__error" id="engraveError" role="alert" hidden></p>
+        </div>
+        <div class="cfg-step__nav">
+          <a class="link-arrow link-arrow--back" href="#sehstaerke">Sehstärke</a>
+          <a class="btn btn--dark" href="#uebersicht">Weiter: Übersicht</a>
+        </div>
+      </section>
+
+      <section class="cfg-step" id="step-uebersicht" data-step="uebersicht" aria-labelledby="h-uebersicht" hidden>
+        <p class="eyebrow">Schritt 6 von 6</p>
+        <h1 class="cfg-step__title" id="h-uebersicht">Deine Panto No. 01.</h1>
+        <dl class="review" id="review"></dl>
+        <div class="review__total">
+          <span>Gesamt</span>
+          <span id="reviewTotal">289 €</span>
+        </div>
+        <p class="review__note" id="reviewNote">Inkl. MwSt. · Kostenloser Versand · 30 Tage Rückgabe</p>
+        <div class="review__actions">
+          <button class="btn btn--neon btn--lg" type="button" id="addToCart">In den Warenkorb</button>
+          <button class="btn btn--ghost btn--lg" type="button" id="buyNow">Direkt zur Kasse</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>
+
+<section class="co view view--checkout" id="checkoutMain" aria-label="Kasse">
+  <p class="secure co__secure">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+    Sichere Kasse
+  </p>
+  <div class="co__grid">
+    <form class="co__form" id="orderForm" novalidate>
+      <h1 class="co__title">Kasse</h1>
+      <p class="demo-note" role="note">Demo-Shop: Es wird nichts bezahlt und keine Bestellung verschickt. Deine Eingaben bleiben in diesem Browser.</p>
+
+      <fieldset class="co-sec">
+        <legend><i>1</i> Kontakt</legend>
+        <div class="field field--full">
+          <label for="email">E-Mail</label>
+          <input id="email" name="email" type="email" autocomplete="email" required placeholder="du@beispiel.de">
+          <p class="field__err" data-for="email"></p>
+        </div>
+        <label class="check" for="news"><input id="news" type="checkbox"> <span>Neue Acetate und Atelier-Termine per E-Mail erhalten</span></label>
+      </fieldset>
+
+      <fieldset class="co-sec">
+        <legend><i>2</i> Lieferadresse</legend>
+        <div class="fields">
+          <div class="field"><label for="first">Vorname</label><input id="first" autocomplete="given-name" required><p class="field__err" data-for="first"></p></div>
+          <div class="field"><label for="last">Nachname</label><input id="last" autocomplete="family-name" required><p class="field__err" data-for="last"></p></div>
+          <div class="field field--full"><label for="street">Straße und Hausnummer</label><input id="street" autocomplete="address-line1" required><p class="field__err" data-for="street"></p></div>
+          <div class="field field--full"><label for="extra">Adresszusatz <small>optional</small></label><input id="extra" autocomplete="address-line2"></div>
+          <div class="field field--zip"><label for="zip">PLZ</label><input id="zip" inputmode="numeric" autocomplete="postal-code" required><p class="field__err" data-for="zip"></p></div>
+          <div class="field field--city"><label for="city">Ort</label><input id="city" autocomplete="address-level2" required><p class="field__err" data-for="city"></p></div>
+          <div class="field field--full">
+            <label for="country">Land</label>
+            <select id="country" autocomplete="country">
+              <option value="DE" selected>Deutschland</option>
+              <option value="AT">Österreich</option>
+              <option value="CH">Schweiz</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="co-sec">
+        <legend><i>3</i> Versand</legend>
+        <div class="cfg-options" id="shippingOptions"></div>
+      </fieldset>
+
+      <fieldset class="co-sec">
+        <legend><i>4</i> Zahlung</legend>
+        <div class="cfg-options" id="paymentOptions"></div>
+        <p class="co-sec__hint">Die Zahlung läuft im nächsten Schritt über den gewählten Anbieter. Luxlens sieht und speichert keine Kartendaten.</p>
+      </fieldset>
+
+      <div class="co-submit">
+        <label class="check" for="terms"><input id="terms" type="checkbox" required> <span>Ich akzeptiere die AGB und habe die Widerrufsbelehrung gelesen.</span></label>
+        <p class="field__err" data-for="terms"></p>
+        <button class="btn btn--neon btn--lg btn--block" type="submit" id="placeOrder">Zahlungspflichtig bestellen · <span id="payTotal">0 €</span></button>
+      </div>
+    </form>
+
+    <aside class="co__summary" aria-labelledby="sumTitle">
+      <div class="co-sum">
+        <h2 id="sumTitle">Deine Bestellung</h2>
+        <div class="co-sum__items" id="sumItems"></div>
+        <div class="co-sum__rows">
+          <div><span>Zwischensumme</span><span id="sumSub">0 €</span></div>
+          <div><span>Versand</span><span id="sumShip">kostenlos</span></div>
+          <div class="co-sum__total"><span>Gesamt</span><span id="sumTotal">0 €</span></div>
+          <div class="co-sum__vat"><span>enthaltene MwSt. 19 %</span><span id="sumVat">0,00 €</span></div>
+        </div>
+        <ul class="co-sum__perks">
+          <li>30 Tage Rückgabe, wir holen die Brille ab</li>
+          <li>2 Jahre Garantie, Nachpolieren ein Leben lang</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <section class="co-empty" id="emptyState" hidden>
+    <h1 class="co__title">Dein Warenkorb ist leer.</h1>
+    <p>Stell dir deine Panto No. 01 im Konfigurator zusammen oder wähle eine Farbe aus der Kollektion.</p>
+    <div class="co-empty__actions">
+      <a class="btn btn--neon btn--lg" href="#farbe">Zum Konfigurator</a>
+      <a class="link-arrow" href="#kollektion">Zur Kollektion</a>
+    </div>
+  </section>
+
+  <section class="co-done" id="doneState" hidden aria-live="polite">
+    <div class="co-done__mark" aria-hidden="true">
+      <svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="M15 27l7 7 15-16"/></svg>
+    </div>
+    <p class="eyebrow">Bestellung <span id="orderNo"></span></p>
+    <h1 class="co__title" id="doneTitle">Danke.</h1>
+    <p class="co-done__lead" id="doneLead"></p>
+    <div class="co-done__box" id="doneItems"></div>
+    <p class="demo-note">Demo-Shop: Es wurde keine Zahlung ausgeführt und keine Bestellung übermittelt.</p>
+    <a class="btn btn--dark btn--lg" href="#top">Zurück zur Startseite</a>
+  </section>
+</section>
+
 <footer class="footer">
   <div class="wrap">
     <div class="footer__top">
@@ -238,7 +495,7 @@
       <p class="footer__claim">Brillen aus Acetat, in kleiner Auflage gefertigt.</p>
     </div>
     <div class="footer__cols">
-      <div><h4>Shop</h4><a href="#kollektion">Kollektion</a><a href="konfigurator.html">Konfigurator</a><a href="#details">Gläser</a></div>
+      <div><h4>Shop</h4><a href="#kollektion">Kollektion</a><a href="#farbe">Konfigurator</a><a href="#details">Gläser</a></div>
       <div><h4>Service</h4><a href="#top">Versand</a><a href="#top">Rückgabe</a><a href="#top">Garantie</a></div>
       <div><h4>Luxlens</h4><a href="#handwerk">Handwerk</a><a href="#process">Atelier</a><a href="#top">Kontakt</a></div>
     </div>
@@ -276,5 +533,8 @@
 <script src="js/glasses.js"></script>
 <script src="js/shop.js"></script>
 <script src="js/main.js"></script>
+<script src="js/configurator.js"></script>
+<script src="js/checkout.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>

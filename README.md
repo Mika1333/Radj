@@ -4,8 +4,8 @@ Produktseite für die Brillenmarke **Luxlens** mit der Fassung *Panto No. 01*.
 
 - **Hero:** Startbild ist ein Porträt in grünem Duoton. Beim Scrollen hebt die Brille von der Nase ab, wird zum Three.js-Modell (Schildpatt-Acetat, Schlüsselloch-Steg, silberne Zierniete) und dreht sich ins Bild. Oben steht nur das Logo, die Navigation erscheint danach.
 - **Smooth Scrolling:** Lenis + GSAP ScrollTrigger (Wort-für-Wort-Text, Foto-Reveal, horizontaler Prozess-Abschnitt, hochzählende Kennzahlen).
-- **Konfigurator (`konfigurator.html`):** eigene Seite mit sechs Schritten (Farbe, Größe, Gläser, Sehstärke, Gravur, Übersicht), jeder Schritt mit eigener Adresse (`#farbe`, `#groesse` …), live 3D-Vorschau und Preis.
-- **Kasse (`kasse.html`):** Kontakt, Lieferadresse mit Prüfung, Versand- und Zahlungsart, Bestellübersicht mit MwSt. und Bestätigungsseite. Demo ohne echte Zahlung.
+- **Konfigurator (`index.html#farbe`):** eigene Ansicht mit sechs Schritten (Farbe, Größe, Gläser, Sehstärke, Gravur, Übersicht), jeder Schritt mit eigener Adresse (`#farbe`, `#groesse` …), live 3D-Vorschau und Preis.
+- **Kasse (`index.html#kasse`):** Kontakt, Lieferadresse mit Prüfung, Versand- und Zahlungsart, Bestellübersicht mit MwSt. und Bestätigungsseite. Demo ohne echte Zahlung.
 - **Kollektion:** Produktbilder werden beim Laden direkt aus dem 3D-Modell gerendert.
 - **Warenkorb:** Seitenleiste mit Produktfoto je Farbe, Mengen und Zwischensumme, auf allen Seiten geteilt über `localStorage`.
 
@@ -21,9 +21,9 @@ python3 -m http.server 8000
 ## Struktur
 
 ```
-index.html          Startseite
-konfigurator.html   Konfigurator in sechs Schritten
-kasse.html          Kasse und Bestellbestätigung
+index.html          Startseite, Konfigurator und Kasse als Ansichten
+konfigurator.html   Weiterleitung auf index.html#farbe
+kasse.html          Weiterleitung auf index.html#kasse
 css/style.css       Design-Tokens (Forest Green, Beige, Neon-Orange) und Layout
 css/pages.css       Layout für Konfigurator und Kasse
 js/glasses.js       3D-Modell, Acetat-Texturen, Licht und Bühne
@@ -31,6 +31,7 @@ js/shop.js          Produktdaten, Warenkorb, Navigation (von allen Seiten genutz
 js/main.js          Startseite: Scroll-Choreografie, Kollektion
 js/configurator.js  Konfigurator-Schritte und 3D-Vorschau
 js/checkout.js      Kasse: Formularprüfung, Summen, Bestätigung
+js/app.js           Wechsel zwischen Startseite, Konfigurator und Kasse
 assets/             Logo, bearbeitetes Produktfoto, Warenkorb-Bilder je Farbe
 ```
 

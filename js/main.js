@@ -180,6 +180,13 @@
   const rootClass = document.documentElement.classList;
   let lastT = -1, lastTf = -1;
   function updateHeroTheme() {
+    // Konfigurator und Kasse: helle Seite, Navigation sichtbar
+    if (document.documentElement.getAttribute('data-route') !== 'main') {
+      rootClass.remove('hero-top');
+      if (lastT !== 1) { rootStyle.setProperty('--t', 1); lastT = 1; }
+      if (lastTf !== 1) { rootStyle.setProperty('--tf', 1); lastTf = 1; }
+      return;
+    }
     const rect = hero.getBoundingClientRect();
     let p, t, tf;
     if (reduceMotion) {
@@ -494,6 +501,7 @@
      START
      ========================================================= */
   initShop({ lenis });
+  window.LXMain = { lenis, updateHeroTheme, scrollToTarget, resizeHero: () => heroState.gl && resizeHero() };
   buildSwatches();
   buildCards();
   initScrollFx();

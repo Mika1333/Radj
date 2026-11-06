@@ -14,7 +14,6 @@
   const price = () => BASE_PRICE + LENSES[draft.lens].add;
   const needsRx = () => LENSES[draft.lens].rx;
 
-  initShop();
 
   /* ---------- Optionen aufbauen ---------- */
   function optionGroup(container, name, entries, current, render, onPick) {
@@ -81,6 +80,8 @@
   const rxFields = ['od-sph', 'od-cyl', 'od-axis', 'os-sph', 'os-cyl', 'os-axis', 'pd'];
   if (draft.rx) rxFields.forEach((f) => { if (draft.rx[f] != null) $(`#rx-${f}`).value = draft.rx[f]; });
   rxFields.forEach((f) => $(`#rx-${f}`).addEventListener('change', () => { readRx(); validateRx(false); }));
+  // Hinweis schon beim Tippen ausblenden: sonst springt der Weiter-Button beim Klick weg
+  ['od', 'os'].forEach((eye) => $(`#rx-${eye}-axis`).addEventListener('input', () => validateRx(false)));
 
   function readRx() {
     draft.rx = Object.fromEntries(rxFields.map((f) => [f, $(`#rx-${f}`).value]));
@@ -177,7 +178,7 @@
   $('#buyNow').addEventListener('click', () => {
     if (!validateRx(true)) { go('sehstaerke'); return; }
     addToCart(cartConfig(), { silent: true });
-    window.location.href = 'kasse.html';
+    location.hash = 'kasse';
   });
 
   /* ---------- Zusammenfassung unter der Bühne ---------- */
@@ -197,6 +198,7 @@
   let currentStep = null;
   const visited = new Set(['farbe']);
   function go(step) { if (location.hash !== '#' + step) location.hash = step; else show(step); }
+  const active = () => document.documentElement.getAttribute('data-route') === 'config';
   function show(step) {
     if (!STEPS.includes(step)) step = 'farbe';
     if (step === currentStep) return;
@@ -221,14 +223,14 @@
       if (j === i) a.setAttribute('aria-current', 'step'); else a.removeAttribute('aria-current');
     });
     $('#progressBar').style.transform = `scaleX(${(i + 1) / STEPS.length})`;
-    document.title = `${$('#' + 'h-' + step).textContent.replace(/\.$/, '')} · Luxlens Konfigurator`;
+    if (active()) document.title = `${$('#' + 'h-' + step).textContent.replace(/\.$/, '')} · Luxlens Konfigurator`;
     setView(step === 'groesse' ? 'front' : step === 'gravur' ? 'side' : 'three');
-    if (prev && window.innerWidth < 900) $('#steps').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
-    else if (prev) window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
-    if (prev) $('.cfg-step__title', next).focus({ preventScroll: true });
+    if (prev && active() && window.innerWidth < 900) $('#steps').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    else if (prev && active()) window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+    if (prev && active()) $('.cfg-step__title', next).focus({ preventScroll: true });
   }
   $$('.cfg-step__title').forEach((h) => h.setAttribute('tabindex', '-1'));
-  window.addEventListener('hashchange', () => show(location.hash.slice(1)));
+  window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (STEPS.includes(h)) show(h); });
 
   /* ---------- 3D-Bühne ---------- */
   const canvas = $('#cfgCanvas');
@@ -241,9 +243,9 @@
     view.idle = 0;
     view.vel = 0;
     view.manual = false;
-    $$('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === name)));
+    $$('[data-stage-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.stageView === name)));
   }
-  $$('[data-view]').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
+  $$('[data-stage-view]').forEach((b) => b.addEventListener('click', () => setView(b.dataset.stageView)));
   function spin(v) { view.vel += v; view.manual = true; view.idle = 0; }
 
   function initStage() {
@@ -291,7 +293,7 @@
       }
       view.rotX += (view.target.x - view.rotX) * 0.07;
       model.rotation.set(view.rotX, view.rotY, 0);
-      renderer.render(scene, camera);
+      if (active()) renderer.render(scene, camera);
       requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
@@ -303,7 +305,7 @@
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-    const dist = Math.max(9.6 / (2 * tan * Math.min(camera.aspect, 1.25)), 15);
+    const dist = Math.max(11 / (2 * tan * Math.min(camera.aspect, 1.25)), 16);
     camera.position.set(0, 1.4, dist);
     camera.lookAt(0, -0.15, 0);
     camera.updateProjectionMatrix();
@@ -318,14 +320,34 @@
   }
 
   /* ---------- Start ---------- */
-  try {
-    initStage();
-  } catch (err) {
-    console.warn('WebGL nicht verfügbar:', err);
-    $('.cfg-stage__box').classList.add('no-webgl');
+  // 3D-Bühne erst beim ersten Öffnen des Konfigurators anlegen
+  let stageTried = false;
+  function onShow() {
+    // Farbe kann auf der Startseite gewählt worden sein
+    const fresh = loadDraft();
+    if (fresh.finish !== draft.finish) {
+      draft.finish = fresh.finish;
+      const r = $(`#finish-${draft.finish}`);
+      if (r) r.checked = true;
+      if (model) setFinish(model, draft.finish, renderer);
+    }
+    if (!stageTried) {
+      stageTried = true;
+      try { initStage(); } catch (err) {
+        console.warn('WebGL nicht verfügbar:', err);
+        $('.cfg-stage__box').classList.add('no-webgl');
+      }
+    } else if (renderer) resize();
+    const h = location.hash.slice(1);
+    const step = STEPS.includes(h) ? h : currentStep || 'farbe';
+    currentStep = null;
+    $$('.cfg-step').forEach((el) => { el.hidden = true; });
+    show(step);
+    update();
   }
   syncRx();
   syncEngraving();
   update();
-  show(location.hash.slice(1) || 'farbe');
+  show(STEPS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'farbe');
+  window.LXConfigurator = { onShow, steps: STEPS };
 })();

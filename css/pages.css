@@ -423,3 +423,15 @@
   .co-sum { padding: 20px; }
 }
 @media (max-width: 760px) { .cfg-stage__hint { display: none; } }
+
+/* ---------- Ansichten auf einer Seite ---------- */
+.view--config, .view--checkout { display: none; }
+html[data-route="config"] .view--main,
+html[data-route="checkout"] .view--main { display: none; }
+html[data-route="config"] .view--config,
+html[data-route="checkout"] .view--checkout {
+  display: block;
+  min-height: 100vh;
+  padding-top: calc(var(--nav-h) + env(safe-area-inset-top, 0px));
+}
+.co__secure { justify-content: center; margin: 0; padding-top: 28px; color: var(--ink-soft); }

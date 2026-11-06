@@ -206,7 +206,7 @@
     $('#cartClose')?.addEventListener('click', closeCart);
     $('#scrim')?.addEventListener('click', closeCart);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeCart(); });
-    $('#checkout')?.addEventListener('click', () => { window.location.href = 'kasse.html'; });
+    $('#checkout')?.addEventListener('click', () => { closeCart(); location.hash = 'kasse'; });
     // Warenkorb in anderen Tabs geändert
     window.addEventListener('storage', (e) => {
       if (e.key === 'luxlens-cart') { cart = (store.get('luxlens-cart', []) || []).map(normalize); renderCart(); }
